@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { FileText, Home, Upload } from "lucide-react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Editor from "@/pages/editor";
 import DocumentManager from "@/pages/document-manager";
 import NotFound from "@/pages/not-found";
@@ -64,8 +65,16 @@ function Router() {
             </div>
           </div>
         )} />
-        <Route path="/documents" component={DocumentManager} />
-        <Route path="/editor/:id?" component={Editor} />
+        <Route path="/documents" component={() => (
+          <ErrorBoundary>
+            <DocumentManager />
+          </ErrorBoundary>
+        )} />
+        <Route path="/editor/:id?" component={() => (
+          <ErrorBoundary>
+            <Editor />
+          </ErrorBoundary>
+        )} />
         <Route component={NotFound} />
       </Switch>
     </>
@@ -74,12 +83,14 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

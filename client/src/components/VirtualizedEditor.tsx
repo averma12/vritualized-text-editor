@@ -3,6 +3,8 @@ import { useVirtualization } from '@/hooks/useVirtualization';
 import { useAudioSync } from '@/hooks/useAudioSync';
 import { DocumentPage } from './DocumentPage';
 import { type DocumentChunk } from '@shared/schema';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { safeSync, handleVirtualizationError } from '@/lib/errorHandler';
 
 interface VirtualizedEditorProps {
   documentId: string;

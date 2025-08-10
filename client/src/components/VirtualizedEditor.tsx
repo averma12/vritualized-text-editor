@@ -57,10 +57,10 @@ export function VirtualizedEditor({
   useEffect(() => {
     if (externalCurrentPage !== undefined && externalCurrentPage !== internalCurrentPage) {
       console.log('🔄 VirtualizedEditor: External page change from', internalCurrentPage, 'to', externalCurrentPage);
-      setInternalCurrentPage(externalCurrentPage);
+      // Only call scrollToChunk, it will handle setting the internal state
       scrollToChunk(externalCurrentPage);
     }
-  }, [externalCurrentPage, internalCurrentPage, scrollToChunk, setInternalCurrentPage]);
+  }, [externalCurrentPage, internalCurrentPage, scrollToChunk]);
 
   // Notify external page changes only when internal page changes autonomously (scroll-based)
   useEffect(() => {

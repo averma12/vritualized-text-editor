@@ -38,7 +38,10 @@ export function NavigationSidebar({
             return (
               <button
                 key={pageNumber}
-                onClick={() => onPageChange(pageIndex)}
+                onClick={() => {
+                  console.log('🖱️ NavigationSidebar: Page clicked', pageNumber, 'index:', pageIndex);
+                  onPageChange(pageIndex);
+                }}
                 className={`w-full text-left p-3 rounded-lg border transition-colors ${
                   isActive 
                     ? "border-primary bg-primary/10 shadow-sm" 

@@ -66,8 +66,12 @@ export function useVirtualization({
   }, [containerRef, chunks.length, bufferSize]);
 
   const scrollToChunk = useCallback((chunkIndex: number) => {
+    console.log('🎯 scrollToChunk called with index:', chunkIndex);
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) {
+      console.log('❌ scrollToChunk: No container ref');
+      return;
+    }
 
     // Prevent scroll event conflicts during navigation
     container.style.scrollBehavior = 'auto';
@@ -76,6 +80,7 @@ export function useVirtualization({
     const newStart = Math.max(0, chunkIndex - bufferSize);
     const newEnd = Math.min(chunks.length, chunkIndex + bufferSize + 1);
     
+    console.log('📊 scrollToChunk: Updating visible range', newStart, 'to', newEnd);
     setVisibleRange({
       start: newStart,
       end: newEnd
@@ -87,12 +92,14 @@ export function useVirtualization({
     // Small delay to ensure DOM is updated, then scroll precisely to the TOP
     setTimeout(() => {
       const targetPageElement = container.querySelector(`[data-page="${chunkIndex + 1}"]`);
+      console.log('🔍 scrollToChunk: Target element found:', !!targetPageElement);
       if (targetPageElement) {
         // Get the exact top position of the target page
         const elementRect = targetPageElement.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
         const targetScrollTop = container.scrollTop + elementRect.top - containerRect.top;
         
+        console.log('📍 scrollToChunk: Scrolling to position:', targetScrollTop);
         // Scroll directly to the exact top position
         container.scrollTop = targetScrollTop;
         
@@ -100,6 +107,8 @@ export function useVirtualization({
         setTimeout(() => {
           container.style.scrollBehavior = 'smooth';
         }, 100);
+      } else {
+        console.log('❌ scrollToChunk: Target page element not found for page', chunkIndex + 1);
       }
     }, 50);
   }, [containerRef, bufferSize, chunks.length]);
@@ -130,7 +139,7 @@ export function useVirtualization({
         });
 
         if (topMostPage && topMostPage.target instanceof HTMLElement) {
-          const pageElement = topMostPage.target as HTMLElement;
+          const pageElement = topMostPage.target;
           const pageAttribute = pageElement.getAttribute('data-page');
           if (pageAttribute) {
             const pageIndex = parseInt(pageAttribute) - 1;

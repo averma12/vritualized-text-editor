@@ -27,7 +27,12 @@ export function SearchOverlay({ isVisible, onClose, documentId, onResultClick }:
   }, [searchQuery]);
 
   const { data: searchResults = [], isLoading } = useQuery<SearchResult[]>({
-    queryKey: ['/api/documents', documentId, 'search', { q: debouncedQuery }],
+    queryKey: ['/api/documents', documentId, 'search', debouncedQuery],
+    queryFn: async () => {
+      const response = await fetch(`/api/documents/${documentId}/search?q=${encodeURIComponent(debouncedQuery)}`);
+      if (!response.ok) throw new Error('Search failed');
+      return response.json();
+    },
     enabled: !!debouncedQuery && debouncedQuery.length >= 2,
   });
 

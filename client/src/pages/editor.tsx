@@ -100,7 +100,10 @@ export default function Editor() {
 
   const handleSearchResultClick = useCallback((chunkIndex: number) => {
     setCurrentPage(chunkIndex);
-    // TODO: Implement navigation to search result
+    setShowSearch(false);
+    // Scroll to the specific chunk
+    const event = new CustomEvent('scrollToChunk', { detail: chunkIndex });
+    window.dispatchEvent(event);
   }, []);
 
   const handleUploadSuccess = useCallback((newDocumentId: string) => {

@@ -171,6 +171,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Search query required" });
       }
 
+      // Handle demo document search
+      if (req.params.id === 'demo') {
+        const results = searchInDemoDocument(query);
+        return res.json(results);
+      }
+
       const results = await storage.searchInDocument(req.params.id, query);
       res.json(results);
     } catch (error) {
@@ -228,4 +234,54 @@ function generateSimulatedTimestamps(text: string): Array<{word: string, start: 
   }
   
   return timestamps;
+}
+
+// Generate demo content (same as client-side)
+function generateDemoContent(chunkIndex: number): string {
+  const topics = [
+    'The Evolution of Artificial Intelligence and Machine Learning',
+    'Climate Change and Environmental Science Research',
+    'Modern Web Development and Software Architecture',
+    'Quantum Computing and Future Technology Trends',
+    'Biomedical Engineering and Healthcare Innovation',
+    'Space Exploration and Astrophysics Discoveries',
+    'Economic Systems and Financial Technology',
+    'Educational Psychology and Learning Theory',
+    'Urban Planning and Sustainable Development',
+    'Neuroscience and Cognitive Research'
+  ];
+  
+  const topic = topics[chunkIndex % topics.length];
+  
+  let content = `Chapter ${chunkIndex + 1}: ${topic}. `;
+  
+  // Generate approximately 2000 words per chunk
+  for (let i = 0; i < 50; i++) {
+    content += `This is paragraph ${i + 1} discussing various aspects of ${topic.toLowerCase()}. We delve deep into the fundamental concepts that shape our understanding of this field. The research methodologies employed in this area are diverse and complex, requiring interdisciplinary collaboration between experts from multiple domains. Historical developments have shown us that innovation often comes from unexpected connections between seemingly unrelated fields of study. Modern approaches to problem-solving in this domain leverage advanced computational techniques and data analysis methods. The implications of these discoveries extend far beyond the immediate scope of the research, influencing policy decisions, technological development, and societal progress. Researchers continue to push the boundaries of what is possible, constantly challenging existing paradigms and proposing novel theoretical frameworks. `;
+  }
+  
+  return content;
+}
+
+// Search within demo document
+function searchInDemoDocument(query: string): Array<{chunkIndex: number, excerpt: string}> {
+  const results: Array<{chunkIndex: number, excerpt: string}> = [];
+  
+  // Generate and search through 50 demo chunks
+  for (let i = 0; i < 50; i++) {
+    const content = generateDemoContent(i);
+    if (content.toLowerCase().includes(query.toLowerCase())) {
+      const index = content.toLowerCase().indexOf(query.toLowerCase());
+      const start = Math.max(0, index - 50);
+      const end = Math.min(content.length, index + query.length + 50);
+      const excerpt = content.substring(start, end);
+      
+      results.push({
+        chunkIndex: i,
+        excerpt: `...${excerpt}...`
+      });
+    }
+  }
+  
+  return results;
 }

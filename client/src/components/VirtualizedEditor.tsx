@@ -50,6 +50,16 @@ export function VirtualizedEditor({
     }
   }, [currentChunkIndex, currentPage, scrollToChunk]);
 
+  // Listen for search result navigation
+  useEffect(() => {
+    const handleScrollToChunk = (event: any) => {
+      scrollToChunk(event.detail);
+    };
+
+    window.addEventListener('scrollToChunk', handleScrollToChunk);
+    return () => window.removeEventListener('scrollToChunk', handleScrollToChunk);
+  }, [scrollToChunk]);
+
   const handleChunkEdit = useCallback((chunkIndex: number, newContent: string) => {
     // TODO: Implement chunk editing logic
     // This would update the chunk content and sync with backend

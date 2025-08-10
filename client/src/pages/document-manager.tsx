@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DocumentSelector } from "@/components/DocumentSelector";
 import { VirtualizedEditor } from "@/components/VirtualizedEditor";
@@ -28,10 +28,10 @@ export default function DocumentManager() {
     setCurrentPage(0); // Reset to first page when switching documents
   };
 
-  const handlePageChange = (pageIndex: number) => {
-    console.log('📍 NavigationSidebar: Page changed to', pageIndex);
+  const handlePageChange = useCallback((pageIndex: number) => {
+    console.log('📍 DocumentManager: Page changed to', pageIndex);
     setCurrentPage(pageIndex);
-  };
+  }, []);
 
   const handleBackToSelector = () => {
     setSelectedDocument(null);
@@ -102,6 +102,7 @@ export default function DocumentManager() {
       <div className="flex">
         {/* Navigation Sidebar */}
         <div className="w-80 border-r bg-card">
+
           <NavigationSidebar
             currentPage={currentPage}
             totalPages={chunks.length}

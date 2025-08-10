@@ -34,63 +34,124 @@ export function useVirtualization({
     const container = containerRef.current;
     if (!container) return;
 
+    // Use intersection observer results for more accurate page detection
+    // This function is mainly for updating visible range for virtualization
     const scrollTop = container.scrollTop;
     const containerHeight = container.clientHeight;
-    const scrollHeight = container.scrollHeight;
 
-    // Estimate page height (assuming standard page dimensions)
-    const estimatedPageHeight = 1056; // 11 inches * 96 DPI
-    const currentPageIndex = Math.floor(scrollTop / estimatedPageHeight);
-    const visiblePageCount = Math.ceil(containerHeight / estimatedPageHeight);
-
-    setCurrentPage(currentPageIndex);
-    setVisibleRange({
-      start: currentPageIndex,
-      end: currentPageIndex + visiblePageCount
+    // Find pages currently in viewport
+    const pages = Array.from(container.querySelectorAll('[data-page]'));
+    const visiblePages = pages.filter(page => {
+      const rect = page.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      return rect.top < containerRect.bottom && rect.bottom > containerRect.top;
     });
-  }, [containerRef]);
+
+    if (visiblePages.length > 0) {
+      const firstVisiblePage = visiblePages[0];
+      const pageNum = parseInt(firstVisiblePage.getAttribute('data-page') || '1');
+      const pageIndex = pageNum - 1;
+      
+      // Update visible range based on actual visible pages
+      const bufferStart = Math.max(0, pageIndex - bufferSize);
+      const bufferEnd = Math.min(chunks.length, pageIndex + visiblePages.length + bufferSize);
+      
+      setVisibleRange({
+        start: bufferStart,
+        end: bufferEnd
+      });
+    }
+  }, [containerRef, chunks.length, bufferSize]);
 
   const scrollToChunk = useCallback((chunkIndex: number) => {
     const container = containerRef.current;
     if (!container) return;
 
-    const estimatedPageHeight = 1056;
-    const targetScroll = chunkIndex * estimatedPageHeight;
+    // First, ensure the target chunk is rendered by updating the visible range
+    const newStart = Math.max(0, chunkIndex - bufferSize);
+    const newEnd = Math.min(chunks.length, chunkIndex + bufferSize + 1);
     
-    container.scrollTo({
-      top: targetScroll,
-      behavior: 'smooth'
+    setVisibleRange({
+      start: newStart,
+      end: newEnd
     });
-  }, [containerRef]);
 
-  // Set up intersection observer for more accurate visibility detection
+    // Small delay to ensure DOM is updated, then scroll
+    setTimeout(() => {
+      const targetPageElement = container.querySelector(`[data-page="${chunkIndex + 1}"]`);
+      if (targetPageElement) {
+        // Use instant scroll for precise navigation
+        targetPageElement.scrollIntoView({
+          behavior: 'instant',
+          block: 'start'
+        });
+        // Set current page immediately to avoid flickering
+        setCurrentPage(chunkIndex);
+      }
+    }, 50);
+  }, [containerRef, bufferSize, chunks.length]);
+
+  // Set up intersection observer for accurate page detection
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
+    let lastIntersectingPage = -1;
+
     const observer = new IntersectionObserver(
       (entries) => {
+        // Find the most visible page (highest intersection ratio)
+        let mostVisibleEntry = null;
+        let maxRatio = 0;
+
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const pageElement = entry.target as HTMLElement;
-            const pageIndex = parseInt(pageElement.dataset.page || '0') - 1;
-            setCurrentPage(pageIndex);
+          if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
+            maxRatio = entry.intersectionRatio;
+            mostVisibleEntry = entry;
           }
         });
+
+        if (mostVisibleEntry) {
+          const pageElement = mostVisibleEntry.target as HTMLElement;
+          const pageAttribute = pageElement.getAttribute('data-page');
+          if (pageAttribute) {
+            const pageIndex = parseInt(pageAttribute) - 1;
+            if (pageIndex !== lastIntersectingPage) {
+              setCurrentPage(pageIndex);
+              lastIntersectingPage = pageIndex;
+            }
+          }
+        }
       },
       {
         root: container,
-        rootMargin: '-50% 0px -50% 0px',
-        threshold: 0
+        rootMargin: '-20% 0px -20% 0px',
+        threshold: [0, 0.25, 0.5, 0.75, 1.0]
       }
     );
 
-    // Observe all page elements
-    const pageElements = container.querySelectorAll('[data-page]');
-    pageElements.forEach(el => observer.observe(el));
+    // Re-observe pages when visible chunks change
+    const observePages = () => {
+      const pageElements = container.querySelectorAll('[data-page]');
+      pageElements.forEach(el => observer.observe(el));
+    };
 
-    return () => observer.disconnect();
-  }, [containerRef, visibleChunks]);
+    // Initial observation with a slight delay to ensure DOM is ready
+    setTimeout(observePages, 100);
+
+    // Re-observe when content changes
+    const mutationObserver = new MutationObserver(() => {
+      observer.disconnect();
+      setTimeout(observePages, 50);
+    });
+
+    mutationObserver.observe(container, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      mutationObserver.disconnect();
+    };
+  }, [containerRef]);
 
   return {
     visibleChunks,

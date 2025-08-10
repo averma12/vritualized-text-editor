@@ -70,9 +70,9 @@ export function usePerformanceMetrics({
     updateMetrics();
   }, [currentPage, totalPages, visibleChunks.length, containerRef?.current]);
 
-  // Update metrics periodically
+  // Update metrics periodically (less frequently to reduce console noise)
   useEffect(() => {
-    const interval = setInterval(updateMetrics, 2000); // Update every 2 seconds
+    const interval = setInterval(updateMetrics, 10000); // Update every 10 seconds
     return () => clearInterval(interval);
   }, []);
 

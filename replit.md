@@ -2,7 +2,24 @@
 
 ## Overview
 
-VirtualText is a sophisticated document editor application designed for handling large text documents with synchronized audio playback. The application provides a virtualized editing experience that can efficiently manage documents with tens of thousands of words while maintaining smooth performance. Key features include real-time audio-text synchronization, document chunking for optimal performance, search functionality, and file upload capabilities with object storage integration.
+VirtualText is a high-performance document editor designed for handling large transcribed audio files (around 100k words) with virtualization to prevent DOM overload. The editor features real-time word highlighting synchronized with audio playback, Google Docs-style A4 page layout, dynamic file uploading with paragraph-based chunking, and authentic real-time performance monitoring.
+
+## Recent Changes
+
+**Latest Update - Performance Monitoring System (August 2025)**
+- ✅ Implemented real-time performance metrics using browser APIs
+- ✅ Fixed page navigation interface conflicts between different components
+- ✅ Added authentic memory usage tracking via performance.memory API
+- ✅ Real DOM element counting from virtualized view
+- ✅ Dynamic viewport information showing currently visible pages
+- ✅ Performance metrics update every 10 seconds with authentic data
+- ✅ Navigation system fully debugged and working across all views
+
+**Previous Updates**
+- ✅ Document upload workflow fully implemented and tested successfully
+- ✅ Page navigation system completely debugged and fixed after extensive troubleshooting
+- ✅ NavigationSidebar made compatible with both onPageChange and onPageClick interfaces
+- ✅ Virtualization system working correctly - only renders visible range of chunks
 
 ## User Preferences
 

@@ -53,19 +53,14 @@ export function VirtualizedEditor({
   // Use external page control if provided, otherwise use internal
   const effectiveCurrentPage = externalCurrentPage !== undefined ? externalCurrentPage : internalCurrentPage;
   
-  // Handle external page changes by scrolling directly
+  // Handle external page changes by ensuring target page is rendered first
   useEffect(() => {
     if (externalCurrentPage !== undefined && externalCurrentPage !== internalCurrentPage) {
       console.log('🔄 VirtualizedEditor: External page change to', externalCurrentPage);
-      const container = containerRef.current;
-      if (container) {
-        const targetElement = container.querySelector(`[data-page="${externalCurrentPage + 1}"]`);
-        if (targetElement) {
-          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }
+      // First call scrollToChunk to ensure the target page gets rendered
+      scrollToChunk(externalCurrentPage);
     }
-  }, [externalCurrentPage, internalCurrentPage]);
+  }, [externalCurrentPage, internalCurrentPage, scrollToChunk]);
 
   // Notify external when internal page changes (from scrolling)
   useEffect(() => {

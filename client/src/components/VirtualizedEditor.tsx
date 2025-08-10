@@ -7,6 +7,8 @@ import { type DocumentChunk } from '@shared/schema';
 interface VirtualizedEditorProps {
   documentId: string;
   chunks: DocumentChunk[];
+  currentPage?: number;
+  onPageChange?: (page: number) => void;
   audioTimestamps?: Array<{word: string, start: number, end: number}>;
   currentPlaybackTime?: number;
   chunkSize?: number;
@@ -16,6 +18,8 @@ interface VirtualizedEditorProps {
 export function VirtualizedEditor({ 
   documentId, 
   chunks, 
+  currentPage: externalCurrentPage,
+  onPageChange: externalOnPageChange,
   audioTimestamps = [], 
   currentPlaybackTime = 0,
   chunkSize = 2000,
@@ -44,6 +48,23 @@ export function VirtualizedEditor({
     currentPlaybackTime,
     chunks
   });
+
+  // Use external page control if provided, otherwise use internal
+  const effectiveCurrentPage = externalCurrentPage !== undefined ? externalCurrentPage : currentPage;
+  
+  // Sync external page changes
+  useEffect(() => {
+    if (externalCurrentPage !== undefined && externalCurrentPage !== currentPage) {
+      scrollToChunk(externalCurrentPage);
+    }
+  }, [externalCurrentPage, currentPage, scrollToChunk]);
+
+  // Notify external page changes
+  useEffect(() => {
+    if (externalOnPageChange && currentPage !== effectiveCurrentPage) {
+      externalOnPageChange(currentPage);
+    }
+  }, [currentPage, externalOnPageChange, effectiveCurrentPage]);
 
   // Auto-scroll to current audio position
   useEffect(() => {

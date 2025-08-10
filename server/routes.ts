@@ -88,6 +88,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete document
+  app.delete("/api/documents/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteDocument(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+      res.json({ message: "Document deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      res.status(500).json({ error: "Failed to delete document" });
+    }
+  });
+
+  // Upload text file
+  app.post("/api/documents/upload", upload.single('file'), async (req: MulterRequest, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file provided" });
+      }
+
+      if (!req.file.originalname.endsWith('.txt') && req.file.mimetype !== 'text/plain') {
+        return res.status(400).json({ error: "Only .txt files are supported" });
+      }
+
+      const documentName = req.body.name || req.file.originalname.replace(/\.txt$/, '');
+      const textContent = req.file.buffer.toString('utf-8');
+      
+      if (!textContent.trim()) {
+        return res.status(400).json({ error: "File is empty" });
+      }
+
+      // Count total words
+      const totalWords = textContent.split(/\s+/).filter(w => w.length > 0).length;
+      
+      // Create the document first to get an ID
+      const document = await storage.createDocument({
+        name: documentName,
+        content: { chunks: [] }, // Will be updated after chunking
+        wordCount: totalWords,
+        audioPath: null,
+        audioDuration: null,
+        wordTimestamps: null
+      });
+
+      // Use the paragraph-based chunking function with the document ID
+      const chunks = chunkTextByParagraphs(textContent, document.id);
+      
+      // Update document content with chunks
+      await storage.updateDocument(document.id, {
+        content: { chunks: chunks.map((chunk, index) => ({ index, content: chunk.content })) }
+      });
+
+      // Create chunk records
+      for (const chunkData of chunks) {
+        await storage.createDocumentChunk({
+          documentId: document.id,
+          chunkIndex: chunkData.chunkIndex,
+          content: chunkData.content,
+          wordCount: chunkData.wordCount,
+          startWordIndex: chunkData.startWordIndex,
+          endWordIndex: chunkData.endWordIndex
+        });
+      }
+
+      res.json({
+        id: document.id,
+        name: document.name,
+        wordCount: document.wordCount,
+        message: "Text file uploaded and processed successfully"
+      });
+    } catch (error) {
+      console.error("Error uploading text file:", error);
+      res.status(500).json({ error: "Failed to upload text file" });
+    }
+  });
+
   // Upload audio file
   app.post("/api/upload-audio", upload.single('audio'), async (req: MulterRequest, res) => {
     try {

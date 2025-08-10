@@ -129,7 +129,7 @@ export function useVirtualization({
           }
         });
 
-        if (topMostPage && topMostPage.target) {
+        if (topMostPage?.target) {
           const pageElement = topMostPage.target as HTMLElement;
           const pageAttribute = pageElement.getAttribute('data-page');
           if (pageAttribute) {

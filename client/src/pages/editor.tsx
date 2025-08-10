@@ -18,6 +18,8 @@ export default function Editor() {
   const [showSearch, setShowSearch] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const [chunkSize, setChunkSize] = useState(2000);
+  const [bufferSize, setBufferSize] = useState(2);
 
   // Fetch document data
   const { data: document } = useQuery<Document>({
@@ -95,7 +97,9 @@ export default function Editor() {
 
   const handlePageClick = useCallback((pageIndex: number) => {
     setCurrentPage(pageIndex);
-    // TODO: Implement smooth scroll to page
+    // Trigger scroll to the selected page
+    const event = new CustomEvent('scrollToChunk', { detail: pageIndex });
+    window.dispatchEvent(event);
   }, []);
 
   const handleSearchResultClick = useCallback((chunkIndex: number) => {
@@ -133,6 +137,10 @@ export default function Editor() {
           totalPages={activeChunks.length}
           onPageClick={handlePageClick}
           documentProgress={documentProgress}
+          chunkSize={chunkSize}
+          bufferSize={bufferSize}
+          onChunkSizeChange={setChunkSize}
+          onBufferSizeChange={setBufferSize}
         />
         
         {/* Main Editor */}
@@ -141,6 +149,8 @@ export default function Editor() {
           chunks={activeChunks}
           audioTimestamps={activeDocument.wordTimestamps as any}
           currentPlaybackTime={currentPlaybackTime}
+          chunkSize={chunkSize}
+          bufferSize={bufferSize}
         />
       </div>
 

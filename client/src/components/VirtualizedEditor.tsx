@@ -9,17 +9,19 @@ interface VirtualizedEditorProps {
   chunks: DocumentChunk[];
   audioTimestamps?: Array<{word: string, start: number, end: number}>;
   currentPlaybackTime?: number;
+  chunkSize?: number;
+  bufferSize?: number;
 }
 
 export function VirtualizedEditor({ 
   documentId, 
   chunks, 
   audioTimestamps = [], 
-  currentPlaybackTime = 0 
+  currentPlaybackTime = 0,
+  chunkSize = 2000,
+  bufferSize = 2
 }: VirtualizedEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [chunkSize] = useState(2000); // words per chunk
-  const [bufferSize] = useState(2); // number of pages to buffer
 
   const {
     visibleChunks,

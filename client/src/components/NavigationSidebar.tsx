@@ -7,6 +7,10 @@ interface NavigationSidebarProps {
   totalPages: number;
   onPageClick: (pageIndex: number) => void;
   documentProgress: number;
+  chunkSize: number;
+  bufferSize: number;
+  onChunkSizeChange: (size: number) => void;
+  onBufferSizeChange: (size: number) => void;
 }
 
 export function NavigationSidebar({ 
@@ -14,7 +18,11 @@ export function NavigationSidebar({
   currentPage, 
   totalPages, 
   onPageClick,
-  documentProgress 
+  documentProgress,
+  chunkSize,
+  bufferSize,
+  onChunkSizeChange,
+  onBufferSizeChange
 }: NavigationSidebarProps) {
   
   const getPageThumbnail = (chunk: DocumentChunk, isActive: boolean) => {
@@ -46,9 +54,24 @@ export function NavigationSidebar({
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-textSecondary">
             <span>Current Position</span>
-            <span>Page {currentPage + 1} of {totalPages}</span>
+            <span 
+              className="hover:text-primary cursor-pointer transition-colors"
+              onClick={() => onPageClick(currentPage)}
+              title="Click to go to current page"
+            >
+              Page {currentPage + 1} of {totalPages}
+            </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-1.5">
+          <div 
+            className="w-full bg-gray-200 rounded-full h-1.5 cursor-pointer hover:h-2 transition-all duration-200"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const clickPosition = (e.clientX - rect.left) / rect.width;
+              const targetPage = Math.floor(clickPosition * totalPages);
+              onPageClick(Math.max(0, Math.min(totalPages - 1, targetPage)));
+            }}
+            title="Click to navigate to any position"
+          >
             <div 
               className="bg-primary h-1.5 rounded-full transition-all duration-300" 
               style={{ width: `${documentProgress}%` }}
@@ -63,7 +86,11 @@ export function NavigationSidebar({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-textSecondary">Chunk Size</span>
-            <select className="text-xs border border-gray-300 rounded px-2 py-1">
+            <select 
+              className="text-xs border border-gray-300 rounded px-2 py-1"
+              value={chunkSize}
+              onChange={(e) => onChunkSizeChange(Number(e.target.value))}
+            >
               <option value="1000">1K words</option>
               <option value="2000">2K words</option>
               <option value="5000">5K words</option>
@@ -71,7 +98,11 @@ export function NavigationSidebar({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-textSecondary">Buffer Pages</span>
-            <select className="text-xs border border-gray-300 rounded px-2 py-1">
+            <select 
+              className="text-xs border border-gray-300 rounded px-2 py-1"
+              value={bufferSize}
+              onChange={(e) => onBufferSizeChange(Number(e.target.value))}
+            >
               <option value="1">1 page</option>
               <option value="2">2 pages</option>
               <option value="3">3 pages</option>

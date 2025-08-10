@@ -91,8 +91,10 @@ export function SafeFileUploader({ onUploadSuccess, onCancel }: SafeFileUploader
       }
 
       // Validate file type
-      if (!file.name.toLowerCase().endsWith('.txt')) {
-        throw new Error("Only .txt files are supported");
+      const supportedExtensions = ['.txt', '.rtf', '.md', '.csv', '.log'];
+      const fileExtension = file.name.toLowerCase().match(/\.[^.]*$/)?.[0];
+      if (!supportedExtensions.includes(fileExtension || '')) {
+        throw new Error("Unsupported file type. Supported formats: .txt, .rtf, .md, .csv, .log");
       }
 
       setSelectedFile(file);
@@ -178,12 +180,12 @@ export function SafeFileUploader({ onUploadSuccess, onCancel }: SafeFileUploader
 
           {/* File Selection */}
           <div className="space-y-2">
-            <Label htmlFor="file">Select Text File (.txt)</Label>
+            <Label htmlFor="file">Select Text File (.txt, .rtf, .md, .csv, .log)</Label>
             <Input
               id="file"
               ref={fileInputRef}
               type="file"
-              accept=".txt"
+              accept=".txt,.rtf,.md,.csv,.log,text/plain,text/rtf,application/rtf,text/markdown,text/csv,application/csv,text/x-log"
               onChange={handleFileSelect}
               disabled={isUploading}
             />

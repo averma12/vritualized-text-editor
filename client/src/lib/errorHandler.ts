@@ -121,7 +121,7 @@ export function handleFileError(error: any, filename?: string): VirtualTextError
   
   if (errorMessage.includes('format') || errorMessage.includes('type')) {
     return new VirtualTextError(
-      `File "${filename || 'selected file'}" is not supported. Please use .txt files only.`,
+      `File "${filename || 'selected file'}" is not supported. Please use text files (.txt, .rtf, .md, .csv, .log).`,
       'INVALID_FILE_TYPE',
       { filename, originalError: errorMessage }
     );

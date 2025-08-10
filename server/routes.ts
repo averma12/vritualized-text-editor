@@ -5,6 +5,17 @@ import { ObjectStorageService } from "./objectStorage";
 import { insertDocumentSchema } from "@shared/schema";
 import multer from "multer";
 
+// Simple RTF text extraction function
+function extractTextFromRTF(rtfContent: string): string {
+  // Remove RTF control words and groups
+  let text = rtfContent.replace(/\\[a-z]+\d*\s?/gi, ' '); // Remove control words
+  text = text.replace(/[{}]/g, ''); // Remove braces
+  text = text.replace(/\\\\/g, '\\'); // Unescape backslashes
+  text = text.replace(/\\'/g, "'"); // Unescape quotes
+  text = text.replace(/\s+/g, ' '); // Normalize whitespace
+  return text.trim();
+}
+
 interface MulterRequest extends Request {
   file?: Express.Multer.File;
 }
@@ -109,12 +120,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No file provided" });
       }
 
-      if (!req.file.originalname.endsWith('.txt') && req.file.mimetype !== 'text/plain') {
-        return res.status(400).json({ error: "Only .txt files are supported" });
+      // Support multiple text file formats
+      const supportedExtensions = ['.txt', '.rtf', '.md', '.csv', '.log'];
+      const supportedMimeTypes = [
+        'text/plain',
+        'text/rtf', 
+        'application/rtf',
+        'text/markdown',
+        'text/csv',
+        'application/csv',
+        'text/x-log'
+      ];
+      
+      const fileExtension = req.file.originalname.toLowerCase().match(/\.[^.]*$/)?.[0];
+      const isValidExtension = supportedExtensions.includes(fileExtension || '');
+      const isValidMimeType = supportedMimeTypes.includes(req.file.mimetype);
+      
+      if (!isValidExtension && !isValidMimeType) {
+        return res.status(400).json({ 
+          error: "Unsupported file type. Supported formats: .txt, .rtf, .md, .csv, .log" 
+        });
       }
 
-      const documentName = req.body.name || req.file.originalname.replace(/\.txt$/, '');
-      const textContent = req.file.buffer.toString('utf-8');
+      const documentName = req.body.name || req.file.originalname.replace(/\.[^.]*$/, '');
+      let textContent = req.file.buffer.toString('utf-8');
+      
+      // Basic RTF processing - extract plain text from RTF
+      if (fileExtension === '.rtf' || req.file.mimetype.includes('rtf')) {
+        textContent = extractTextFromRTF(textContent);
+      }
       
       if (!textContent.trim()) {
         return res.status(400).json({ error: "File is empty" });

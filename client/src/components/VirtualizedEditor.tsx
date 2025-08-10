@@ -1,0 +1,149 @@
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useVirtualization } from '@/hooks/useVirtualization';
+import { useAudioSync } from '@/hooks/useAudioSync';
+import { DocumentPage } from './DocumentPage';
+import { type DocumentChunk } from '@shared/schema';
+
+interface VirtualizedEditorProps {
+  documentId: string;
+  chunks: DocumentChunk[];
+  audioTimestamps?: Array<{word: string, start: number, end: number}>;
+  currentPlaybackTime?: number;
+}
+
+export function VirtualizedEditor({ 
+  documentId, 
+  chunks, 
+  audioTimestamps = [], 
+  currentPlaybackTime = 0 
+}: VirtualizedEditorProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [chunkSize] = useState(2000); // words per chunk
+  const [bufferSize] = useState(2); // number of pages to buffer
+
+  const {
+    visibleChunks,
+    totalPages,
+    currentPage,
+    handleScroll,
+    scrollToChunk
+  } = useVirtualization({
+    chunks,
+    containerRef,
+    chunkSize,
+    bufferSize
+  });
+
+  const {
+    highlightedWordIndex,
+    currentChunkIndex
+  } = useAudioSync({
+    audioTimestamps,
+    currentPlaybackTime,
+    chunks
+  });
+
+  // Auto-scroll to current audio position
+  useEffect(() => {
+    if (currentChunkIndex !== -1 && currentChunkIndex !== currentPage) {
+      scrollToChunk(currentChunkIndex);
+    }
+  }, [currentChunkIndex, currentPage, scrollToChunk]);
+
+  const handleChunkEdit = useCallback((chunkIndex: number, newContent: string) => {
+    // TODO: Implement chunk editing logic
+    // This would update the chunk content and sync with backend
+    console.log('Editing chunk', chunkIndex, newContent);
+  }, []);
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Editor Toolbar */}
+      <div className="bg-surface border-b border-gray-200 px-6 py-3">
+        <div className="flex items-center space-x-4">
+          {/* Formatting Tools */}
+          <div className="flex items-center space-x-1">
+            <button className="p-2 text-textSecondary hover:text-textPrimary hover:bg-gray-100 rounded transition-colors">
+              <i className="fas fa-bold"></i>
+            </button>
+            <button className="p-2 text-textSecondary hover:text-textPrimary hover:bg-gray-100 rounded transition-colors">
+              <i className="fas fa-italic"></i>
+            </button>
+            <button className="p-2 text-textSecondary hover:text-textPrimary hover:bg-gray-100 rounded transition-colors">
+              <i className="fas fa-underline"></i>
+            </button>
+          </div>
+          
+          <div className="h-6 w-px bg-gray-300"></div>
+          
+          {/* Alignment Tools */}
+          <div className="flex items-center space-x-1">
+            <button className="p-2 text-textSecondary hover:text-textPrimary hover:bg-gray-100 rounded transition-colors">
+              <i className="fas fa-align-left"></i>
+            </button>
+            <button className="p-2 text-textSecondary hover:text-textPrimary hover:bg-gray-100 rounded transition-colors">
+              <i className="fas fa-align-center"></i>
+            </button>
+            <button className="p-2 text-textSecondary hover:text-textPrimary hover:bg-gray-100 rounded transition-colors">
+              <i className="fas fa-align-right"></i>
+            </button>
+          </div>
+          
+          <div className="h-6 w-px bg-gray-300"></div>
+          
+          {/* View Controls */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-textSecondary">Zoom:</span>
+            <select className="text-sm border border-gray-300 rounded px-2 py-1">
+              <option value="75">75%</option>
+              <option value="100">100%</option>
+              <option value="125">125%</option>
+              <option value="150">150%</option>
+            </select>
+          </div>
+          
+          <div className="flex-1"></div>
+          
+          {/* Performance Indicator */}
+          <div className="flex items-center space-x-2 text-sm text-textSecondary">
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse-slow"></div>
+              <span>Virtualized</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Virtualized Document Container */}
+      <div 
+        ref={containerRef}
+        className="flex-1 overflow-auto bg-gray-100 p-6"
+        onScroll={handleScroll}
+        style={{ maxHeight: 'calc(100vh - 200px)' }}
+      >
+        {visibleChunks.map((chunk, index) => (
+          <DocumentPage
+            key={`${chunk.id}-${chunk.chunkIndex}`}
+            chunk={chunk}
+            pageNumber={chunk.chunkIndex + 1}
+            totalPages={totalPages}
+            isActive={chunk.chunkIndex === currentPage}
+            highlightedWordIndex={chunk.chunkIndex === currentChunkIndex ? highlightedWordIndex : -1}
+            onEdit={(content: string) => handleChunkEdit(chunk.chunkIndex, content)}
+            audioTimestamps={audioTimestamps}
+          />
+        ))}
+        
+        {/* Loading Indicator */}
+        {visibleChunks.length < chunks.length && (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center space-x-2 text-textSecondary">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+              <span className="text-sm">Loading next pages...</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

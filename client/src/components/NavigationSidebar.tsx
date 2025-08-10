@@ -24,6 +24,14 @@ export function NavigationSidebar({
   documentId,
   ...otherProps
 }: NavigationSidebarProps) {
+  console.log('🔍 NavigationSidebar: Received props', {
+    currentPage,
+    totalPages,
+    onPageChange: typeof onPageChange,
+    onPageClick: typeof onPageClick,
+    documentId
+  });
+  
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
 
   return (

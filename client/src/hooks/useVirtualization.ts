@@ -22,7 +22,12 @@ export function useVirtualization({
   const visibleChunks = useMemo(() => {
     const start = Math.max(0, visibleRange.start - bufferSize);
     const end = Math.min(chunks.length, visibleRange.end + bufferSize);
-    return chunks.slice(start, end);
+    const visible = chunks.slice(start, end);
+    
+    // Log virtualization info for testing
+    console.log(`🔧 Virtualization: Rendering ${visible.length} chunks (${start}-${end-1}) out of ${chunks.length} total chunks`);
+    
+    return visible;
   }, [chunks, visibleRange, bufferSize]);
 
   const handleScroll = useCallback(() => {

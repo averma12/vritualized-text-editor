@@ -31,12 +31,39 @@ export default function Editor() {
     enabled: documentId !== 'demo'
   });
 
+  // Generate realistic large demo document
+  const generateDemoContent = (chunkIndex: number): string => {
+    const topics = [
+      'The Evolution of Artificial Intelligence and Machine Learning',
+      'Climate Change and Environmental Science Research',
+      'Modern Web Development and Software Architecture',
+      'Quantum Computing and Future Technology Trends',
+      'Biomedical Engineering and Healthcare Innovation',
+      'Space Exploration and Astrophysics Discoveries',
+      'Economic Systems and Financial Technology',
+      'Educational Psychology and Learning Theory',
+      'Urban Planning and Sustainable Development',
+      'Neuroscience and Cognitive Research'
+    ];
+    
+    const topic = topics[chunkIndex % topics.length];
+    
+    let content = `Chapter ${chunkIndex + 1}: ${topic}. `;
+    
+    // Generate approximately 2000 words per chunk
+    for (let i = 0; i < 50; i++) {
+      content += `This is paragraph ${i + 1} discussing various aspects of ${topic.toLowerCase()}. We delve deep into the fundamental concepts that shape our understanding of this field. The research methodologies employed in this area are diverse and complex, requiring interdisciplinary collaboration between experts from multiple domains. Historical developments have shown us that innovation often comes from unexpected connections between seemingly unrelated fields of study. Modern approaches to problem-solving in this domain leverage advanced computational techniques and data analysis methods. The implications of these discoveries extend far beyond the immediate scope of the research, influencing policy decisions, technological development, and societal progress. Researchers continue to push the boundaries of what is possible, constantly challenging existing paradigms and proposing novel theoretical frameworks. `;
+    }
+    
+    return content;
+  };
+
   // Demo data for when no document is loaded
   const demoDocument: Document = {
     id: 'demo',
-    name: 'Demo Document',
+    name: 'Large Demo Document - Virtualization Test (100k+ words)',
     content: { demo: true },
-    wordCount: 98547,
+    wordCount: 100000,
     audioPath: null,
     audioDuration: 7452,
     wordTimestamps: [],
@@ -44,17 +71,16 @@ export default function Editor() {
     updatedAt: new Date()
   };
 
-  const demoChunks: DocumentChunk[] = [
-    {
-      id: 'demo-chunk-1',
-      documentId: 'demo',
-      chunkIndex: 0,
-      content: 'In this section, we explore the fascinating world of natural language processing and its applications in modern technology. The algorithms that power these systems are incredibly sophisticated, utilizing machine learning techniques that have evolved over decades of research and development. One of the primary challenges in handling large documents is the performance bottleneck created when rendering extensive amounts of text content simultaneously. Traditional approaches often result in thousands of DOM elements being created at once, leading to significant memory consumption and degraded user experience. Virtualization techniques address this issue by implementing a windowing strategy where only the visible content plus a small buffer is rendered in the DOM. This approach dramatically reduces memory usage while maintaining smooth scrolling and interaction capabilities.',
-      wordCount: 500,
-      startWordIndex: 0,
-      endWordIndex: 499
-    }
-  ];
+  // Generate 50 chunks of ~2000 words each = ~100k words total
+  const demoChunks: DocumentChunk[] = Array.from({ length: 50 }, (_, index) => ({
+    id: `demo-chunk-${index + 1}`,
+    documentId: 'demo',
+    chunkIndex: index,
+    content: generateDemoContent(index),
+    wordCount: 2000,
+    startWordIndex: index * 2000,
+    endWordIndex: (index + 1) * 2000 - 1
+  }));
 
   const activeDocument = document || demoDocument;
   const activeChunks = chunks.length > 0 ? chunks : demoChunks;

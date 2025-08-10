@@ -14,6 +14,9 @@ export function NavigationSidebar({
   onPageChange,
   documentId
 }: NavigationSidebarProps) {
+  // Debug: Check what we're receiving
+  console.log('🔍 NavigationSidebar props:', { currentPage, totalPages, onPageChange: typeof onPageChange, documentId });
+  
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
 
   return (
@@ -40,7 +43,12 @@ export function NavigationSidebar({
                 key={pageNumber}
                 onClick={() => {
                   console.log('🖱️ NavigationSidebar: Page clicked', pageNumber, 'index:', pageIndex);
-                  onPageChange(pageIndex);
+                  console.log('🔍 onPageChange type at click:', typeof onPageChange);
+                  if (typeof onPageChange === 'function') {
+                    onPageChange(pageIndex);
+                  } else {
+                    console.error('❌ onPageChange is not a function:', onPageChange);
+                  }
                 }}
                 className={`w-full text-left p-3 rounded-lg border transition-colors ${
                   isActive 

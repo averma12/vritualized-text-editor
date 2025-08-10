@@ -98,14 +98,15 @@
 }
 
 @layer components {
-  /* Page styles for document layout */
+  /* Page styles for document layout - A4 Format */
   .editor-page {
-    width: 8.5in;
-    min-height: 11in;
-    padding: 1in;
+    width: 8.27in; /* A4 width */
+    min-height: 11.7in; /* A4 height */
+    padding: 0.75in; /* A4 standard margins */
     margin: 0 auto 2rem auto;
     background: white;
     position: relative;
+    box-sizing: border-box;
   }
   
   @media (max-width: 768px) {

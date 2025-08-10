@@ -9,6 +9,7 @@ import { FileUploader } from '@/components/FileUploader';
 import { UploadModal } from '@/components/UploadModal';
 import { type Document, type DocumentChunk } from '@shared/schema';
 import { useParams } from 'wouter';
+import { chunkTextByParagraphs, convertToDocumentChunks } from '@/utils/paragraphChunker';
 
 export default function Editor() {
   const params = useParams();
@@ -45,56 +46,83 @@ export default function Editor() {
     enabled: documentId !== 'demo'
   });
 
-  // Generate realistic large demo document
-  const generateDemoContent = (chunkIndex: number): string => {
+  // Generate realistic demo content with proper paragraph structure
+  const generateDemoText = (): string => {
     const topics = [
-      'The Evolution of Artificial Intelligence and Machine Learning',
-      'Climate Change and Environmental Science Research',
-      'Modern Web Development and Software Architecture',
-      'Quantum Computing and Future Technology Trends',
-      'Biomedical Engineering and Healthcare Innovation',
-      'Space Exploration and Astrophysics Discoveries',
-      'Economic Systems and Financial Technology',
-      'Educational Psychology and Learning Theory',
-      'Urban Planning and Sustainable Development',
-      'Neuroscience and Cognitive Research'
+      { 
+        title: 'The Evolution of Artificial Intelligence and Machine Learning',
+        content: [
+          'Artificial Intelligence has undergone remarkable transformation over the past decade, evolving from theoretical concepts to practical applications that permeate every aspect of our daily lives.',
+          'Machine learning algorithms now power recommendation systems, autonomous vehicles, and medical diagnostic tools with unprecedented accuracy and efficiency.',
+          'The development of neural networks, particularly deep learning architectures, has revolutionized how computers process and understand complex data patterns.',
+          'From natural language processing to computer vision, AI systems demonstrate capabilities that were once thought to be exclusively human domains.'
+        ]
+      },
+      {
+        title: 'Climate Change and Environmental Science Research',
+        content: [
+          'Climate science has reached a critical juncture where the evidence for anthropogenic climate change is overwhelming and undeniable.',
+          'Rising global temperatures, melting ice caps, and extreme weather events demonstrate the urgent need for comprehensive environmental action.',
+          'Research institutions worldwide collaborate to develop climate models that predict future scenarios and inform policy decisions.',
+          'The transition to renewable energy sources represents both a challenge and an opportunity for sustainable development.'
+        ]
+      },
+      {
+        title: 'Modern Web Development and Software Architecture',
+        content: [
+          'Web development has evolved from static HTML pages to dynamic, interactive applications that rival traditional desktop software.',
+          'Modern frameworks like React, Vue, and Angular enable developers to create sophisticated user interfaces with enhanced performance.',
+          'Microservices architecture and cloud computing have transformed how applications are designed, deployed, and scaled.',
+          'The emphasis on user experience, accessibility, and performance optimization drives innovation in web technologies.'
+        ]
+      }
     ];
+
+    let fullText = 'A4 Format Demo Document - Comprehensive Research Compilation\n\n';
     
-    const topic = topics[chunkIndex % topics.length];
-    
-    let content = `Chapter ${chunkIndex + 1}: ${topic}. `;
-    
-    // Generate approximately 2000 words per chunk
-    for (let i = 0; i < 50; i++) {
-      content += `This is paragraph ${i + 1} discussing various aspects of ${topic.toLowerCase()}. We delve deep into the fundamental concepts that shape our understanding of this field. The research methodologies employed in this area are diverse and complex, requiring interdisciplinary collaboration between experts from multiple domains. Historical developments have shown us that innovation often comes from unexpected connections between seemingly unrelated fields of study. Modern approaches to problem-solving in this domain leverage advanced computational techniques and data analysis methods. The implications of these discoveries extend far beyond the immediate scope of the research, influencing policy decisions, technological development, and societal progress. Researchers continue to push the boundaries of what is possible, constantly challenging existing paradigms and proposing novel theoretical frameworks. `;
+    // Repeat topics to create substantial content
+    for (let chapter = 1; chapter <= 15; chapter++) {
+      const topic = topics[(chapter - 1) % topics.length];
+      fullText += `Chapter ${chapter}: ${topic.title}\n\n`;
+      
+      for (let section = 1; section <= 4; section++) {
+        fullText += `Section ${section}.\n\n`;
+        
+        // Add multiple paragraphs for each section
+        for (let para = 0; para < topic.content.length; para++) {
+          fullText += topic.content[para] + '\n\n';
+          
+          // Add additional elaboration paragraphs
+          fullText += `This research demonstrates significant implications for the field, providing new insights into the underlying mechanisms and potential applications. The methodology employed in these studies follows rigorous scientific standards and incorporates peer-reviewed protocols.\n\n`;
+          
+          fullText += `Furthermore, the interdisciplinary approach taken in this investigation reveals connections between seemingly disparate domains, opening new avenues for future research and practical implementation.\n\n`;
+        }
+      }
     }
-    
-    return content;
+
+    return fullText;
   };
 
   // Demo data for when no document is loaded
+  // Generate demo content with paragraph-based chunking
+  const demoText = generateDemoText();
+  const demoParagraphChunks = chunkTextByParagraphs(demoText, 'demo', {
+    maxWordsPerPage: 600, // A4 page capacity
+    minWordsPerPage: 150  // Minimum before page break
+  });
+  const demoChunks = convertToDocumentChunks(demoParagraphChunks);
+
   const demoDocument: Document = {
     id: 'demo',
-    name: 'Large Demo Document - Virtualization Test (100k+ words)',
+    name: `A4 Demo Document - ${demoChunks.length} Pages (${demoText.split(/\s+/).length.toLocaleString()} words)`,
     content: { demo: true },
-    wordCount: 100000,
+    wordCount: demoText.split(/\s+/).length,
     audioPath: null,
     audioDuration: 7452,
     wordTimestamps: [],
     createdAt: new Date(),
     updatedAt: new Date()
   };
-
-  // Generate 50 chunks of ~2000 words each = ~100k words total
-  const demoChunks: DocumentChunk[] = Array.from({ length: 50 }, (_, index) => ({
-    id: `demo-chunk-${index + 1}`,
-    documentId: 'demo',
-    chunkIndex: index,
-    content: generateDemoContent(index),
-    wordCount: 2000,
-    startWordIndex: index * 2000,
-    endWordIndex: (index + 1) * 2000 - 1
-  }));
 
   const activeDocument = uploadedDocument || document || demoDocument;
   const activeChunks = uploadedDocument?.chunks || (chunks.length > 0 ? chunks : demoChunks);

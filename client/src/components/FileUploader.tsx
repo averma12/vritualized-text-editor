@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, FileText, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { chunkTextByParagraphs, convertToDocumentChunks } from '@/utils/paragraphChunker';
 
 interface FileUploaderProps {
   onFileProcessed: (document: {
@@ -42,26 +43,17 @@ export function FileUploader({ onFileProcessed, onClose }: FileUploaderProps) {
         throw new Error('File appears to be empty');
       }
 
-      // Create document
+      // Create document and chunk by paragraphs
       const documentId = `uploaded-${Date.now()}`;
-      const chunkSize = 2000;
-      const chunks = [];
       
-      // Split into chunks
-      for (let i = 0; i < words.length; i += chunkSize) {
-        const chunkWords = words.slice(i, i + chunkSize);
-        const chunkContent = chunkWords.join(' ');
-        
-        chunks.push({
-          id: `${documentId}-chunk-${Math.floor(i / chunkSize)}`,
-          documentId,
-          chunkIndex: Math.floor(i / chunkSize),
-          content: chunkContent,
-          wordCount: chunkWords.length,
-          startWordIndex: i,
-          endWordIndex: i + chunkWords.length - 1
-        });
-      }
+      // Use paragraph-based chunking for proper page breaks
+      const paragraphChunks = chunkTextByParagraphs(text, documentId, {
+        maxWordsPerPage: 600, // Conservative estimate for A4 pages
+        minWordsPerPage: 150  // Minimum words before forcing page break
+      });
+      
+      // Convert to compatible format
+      const chunks = convertToDocumentChunks(paragraphChunks);
 
       const processedDocument = {
         id: documentId,

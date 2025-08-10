@@ -56,21 +56,37 @@ export function DocumentPage({
         onInput={handleContentChange}
         suppressContentEditableWarning={true}
       >
-        {words.map((word, index) => {
-          const isHighlighted = highlightedWordIndex !== -1 && 
-                               word.globalIndex === highlightedWordIndex;
-          const timestamp = getWordTimestamp(word.globalIndex);
+        {chunk.content.split('\n\n').filter(para => para.trim().length > 0).map((paragraph, paraIndex) => {
+          const trimmedParagraph = paragraph.trim();
+          if (!trimmedParagraph) return null;
+          
+          // Calculate word offset for this paragraph
+          let wordOffset = chunk.startWordIndex;
+          const previousParagraphs = chunk.content.split('\n\n').slice(0, paraIndex);
+          for (const prevPara of previousParagraphs) {
+            wordOffset += prevPara.split(/\s+/).filter(w => w.length > 0).length;
+          }
           
           return (
-            <span
-              key={`${word.globalIndex}-${word.text}`}
-              className={`${isHighlighted ? 'highlighted-word' : ''}`}
-              data-word-id={`w_${word.globalIndex}`}
-              data-audio-timestamp={timestamp?.start || 0}
-              style={{ marginRight: '0.25em' }}
-            >
-              {word.text}
-            </span>
+            <div key={paraIndex} className="mb-4 leading-relaxed">
+              {trimmedParagraph.split(/\s+/).map((word, wordIndex) => {
+                const globalIndex = wordOffset + wordIndex;
+                const isHighlighted = highlightedWordIndex !== -1 && globalIndex === highlightedWordIndex;
+                const timestamp = audioTimestamps.find(ts => ts.word === word);
+                
+                return (
+                  <span
+                    key={`${paraIndex}-${wordIndex}`}
+                    className={`${isHighlighted ? 'highlighted-word' : ''}`}
+                    data-word-id={`w_${globalIndex}`}
+                    data-audio-timestamp={timestamp?.start || 0}
+                    style={{ marginRight: '0.25em' }}
+                  >
+                    {word}
+                  </span>
+                );
+              })}
+            </div>
           );
         })}
       </div>

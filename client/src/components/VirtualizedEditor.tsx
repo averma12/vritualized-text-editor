@@ -134,14 +134,9 @@ export function VirtualizedEditor({
           />
         ))}
         
-        {/* Loading Indicator */}
-        {visibleChunks.length < chunks.length && (
-          <div className="flex items-center justify-center py-8">
-            <div className="flex items-center space-x-2 text-textSecondary">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-              <span className="text-sm">Loading next pages...</span>
-            </div>
-          </div>
+        {/* Spacer for smooth scrolling */}
+        {visibleChunks.length > 0 && (
+          <div className="h-4"></div>
         )}
       </div>
     </div>

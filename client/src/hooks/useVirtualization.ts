@@ -34,39 +34,44 @@ export function useVirtualization({
     const container = containerRef.current;
     if (!container) return;
 
-    // Use intersection observer results for more accurate page detection
-    // This function is mainly for updating visible range for virtualization
+    // Only update visible range, let intersection observer handle page detection
     const scrollTop = container.scrollTop;
     const containerHeight = container.clientHeight;
 
-    // Find pages currently in viewport
+    // Find the topmost visible page for range calculation
     const pages = Array.from(container.querySelectorAll('[data-page]'));
-    const visiblePages = pages.filter(page => {
+    let topMostPageIndex = 0;
+    
+    for (const page of pages) {
       const rect = page.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
-      return rect.top < containerRect.bottom && rect.bottom > containerRect.top;
-    });
-
-    if (visiblePages.length > 0) {
-      const firstVisiblePage = visiblePages[0];
-      const pageNum = parseInt(firstVisiblePage.getAttribute('data-page') || '1');
-      const pageIndex = pageNum - 1;
       
-      // Update visible range based on actual visible pages
-      const bufferStart = Math.max(0, pageIndex - bufferSize);
-      const bufferEnd = Math.min(chunks.length, pageIndex + visiblePages.length + bufferSize);
-      
-      setVisibleRange({
-        start: bufferStart,
-        end: bufferEnd
-      });
+      // Find the first page whose top is at or above the container top
+      if (rect.top <= containerRect.top + 100) { // 100px tolerance
+        const pageNum = parseInt(page.getAttribute('data-page') || '1');
+        topMostPageIndex = pageNum - 1;
+      } else {
+        break;
+      }
     }
+
+    // Update visible range based on the topmost visible page
+    const bufferStart = Math.max(0, topMostPageIndex - bufferSize);
+    const bufferEnd = Math.min(chunks.length, topMostPageIndex + 3 + bufferSize); // Show 3 pages ahead
+    
+    setVisibleRange({
+      start: bufferStart,
+      end: bufferEnd
+    });
   }, [containerRef, chunks.length, bufferSize]);
 
   const scrollToChunk = useCallback((chunkIndex: number) => {
     const container = containerRef.current;
     if (!container) return;
 
+    // Prevent scroll event conflicts during navigation
+    container.style.scrollBehavior = 'auto';
+    
     // First, ensure the target chunk is rendered by updating the visible range
     const newStart = Math.max(0, chunkIndex - bufferSize);
     const newEnd = Math.min(chunks.length, chunkIndex + bufferSize + 1);
@@ -76,17 +81,25 @@ export function useVirtualization({
       end: newEnd
     });
 
-    // Small delay to ensure DOM is updated, then scroll
+    // Set current page immediately to prevent conflicts
+    setCurrentPage(chunkIndex);
+
+    // Small delay to ensure DOM is updated, then scroll precisely to the TOP
     setTimeout(() => {
       const targetPageElement = container.querySelector(`[data-page="${chunkIndex + 1}"]`);
       if (targetPageElement) {
-        // Use instant scroll for precise navigation
-        targetPageElement.scrollIntoView({
-          behavior: 'instant',
-          block: 'start'
-        });
-        // Set current page immediately to avoid flickering
-        setCurrentPage(chunkIndex);
+        // Get the exact top position of the target page
+        const elementRect = targetPageElement.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        const targetScrollTop = container.scrollTop + elementRect.top - containerRect.top;
+        
+        // Scroll directly to the exact top position
+        container.scrollTop = targetScrollTop;
+        
+        // Brief delay to restore smooth scrolling for user interactions
+        setTimeout(() => {
+          container.style.scrollBehavior = 'smooth';
+        }, 100);
       }
     }, 50);
   }, [containerRef, bufferSize, chunks.length]);
@@ -100,19 +113,24 @@ export function useVirtualization({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        // Find the most visible page (highest intersection ratio)
-        let mostVisibleEntry = null;
-        let maxRatio = 0;
+        // Find the topmost page that meets our criteria
+        let topMostPage = null;
+        let topMostPosition = Infinity;
 
         entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
-            maxRatio = entry.intersectionRatio;
-            mostVisibleEntry = entry;
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.1) {
+            const rect = entry.boundingClientRect;
+            
+            // Prefer pages whose top is closer to the container top
+            if (rect.top < topMostPosition) {
+              topMostPosition = rect.top;
+              topMostPage = entry;
+            }
           }
         });
 
-        if (mostVisibleEntry) {
-          const pageElement = mostVisibleEntry.target as HTMLElement;
+        if (topMostPage) {
+          const pageElement = topMostPage.target as HTMLElement;
           const pageAttribute = pageElement.getAttribute('data-page');
           if (pageAttribute) {
             const pageIndex = parseInt(pageAttribute) - 1;
@@ -125,8 +143,8 @@ export function useVirtualization({
       },
       {
         root: container,
-        rootMargin: '-20% 0px -20% 0px',
-        threshold: [0, 0.25, 0.5, 0.75, 1.0]
+        rootMargin: '-10% 0px -50% 0px', // More precise: page is "current" when its top 10% is visible
+        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1.0]
       }
     );
 

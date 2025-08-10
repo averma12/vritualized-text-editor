@@ -118,7 +118,7 @@ export function useVirtualization({
         let topMostPosition = Infinity;
 
         entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.1) {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.1 && entry.target instanceof HTMLElement) {
             const rect = entry.boundingClientRect;
             
             // Prefer pages whose top is closer to the container top
@@ -129,7 +129,7 @@ export function useVirtualization({
           }
         });
 
-        if (topMostPage?.target) {
+        if (topMostPage && topMostPage.target instanceof HTMLElement) {
           const pageElement = topMostPage.target as HTMLElement;
           const pageAttribute = pageElement.getAttribute('data-page');
           if (pageAttribute) {
@@ -173,6 +173,7 @@ export function useVirtualization({
 
   return {
     visibleChunks,
+    setCurrentPage,
     totalPages,
     currentPage,
     handleScroll,

@@ -30,9 +30,10 @@ export function VirtualizedEditor({
   const {
     visibleChunks,
     totalPages,
-    currentPage,
+    currentPage: internalCurrentPage,
     handleScroll,
-    scrollToChunk
+    scrollToChunk,
+    setCurrentPage: setInternalCurrentPage
   } = useVirtualization({
     chunks,
     containerRef,
@@ -50,28 +51,31 @@ export function VirtualizedEditor({
   });
 
   // Use external page control if provided, otherwise use internal
-  const effectiveCurrentPage = externalCurrentPage !== undefined ? externalCurrentPage : currentPage;
+  const effectiveCurrentPage = externalCurrentPage !== undefined ? externalCurrentPage : internalCurrentPage;
   
-  // Sync external page changes
+  // Sync external page changes to internal state immediately
   useEffect(() => {
-    if (externalCurrentPage !== undefined && externalCurrentPage !== currentPage) {
+    if (externalCurrentPage !== undefined && externalCurrentPage !== internalCurrentPage) {
+      console.log('🔄 VirtualizedEditor: External page change from', internalCurrentPage, 'to', externalCurrentPage);
+      setInternalCurrentPage(externalCurrentPage);
       scrollToChunk(externalCurrentPage);
     }
-  }, [externalCurrentPage, currentPage, scrollToChunk]);
+  }, [externalCurrentPage, internalCurrentPage, scrollToChunk, setInternalCurrentPage]);
 
-  // Notify external page changes
+  // Notify external page changes only when internal page changes autonomously (scroll-based)
   useEffect(() => {
-    if (externalOnPageChange && currentPage !== effectiveCurrentPage) {
-      externalOnPageChange(currentPage);
+    if (externalOnPageChange && externalCurrentPage !== undefined && internalCurrentPage !== externalCurrentPage) {
+      console.log('📤 VirtualizedEditor: Notifying external of internal page change to', internalCurrentPage);
+      externalOnPageChange(internalCurrentPage);
     }
-  }, [currentPage, externalOnPageChange, effectiveCurrentPage]);
+  }, [internalCurrentPage, externalOnPageChange, externalCurrentPage]);
 
   // Auto-scroll to current audio position
   useEffect(() => {
-    if (currentChunkIndex !== -1 && currentChunkIndex !== currentPage) {
+    if (currentChunkIndex !== -1 && currentChunkIndex !== effectiveCurrentPage) {
       scrollToChunk(currentChunkIndex);
     }
-  }, [currentChunkIndex, currentPage, scrollToChunk]);
+  }, [currentChunkIndex, effectiveCurrentPage, scrollToChunk]);
 
   // Listen for search result navigation
   useEffect(() => {
@@ -160,7 +164,7 @@ export function VirtualizedEditor({
             chunk={chunk}
             pageNumber={chunk.chunkIndex + 1}
             totalPages={totalPages}
-            isActive={chunk.chunkIndex === currentPage}
+            isActive={chunk.chunkIndex === effectiveCurrentPage}
             highlightedWordIndex={chunk.chunkIndex === currentChunkIndex ? highlightedWordIndex : -1}
             onEdit={(content: string) => handleChunkEdit(chunk.chunkIndex, content)}
             audioTimestamps={audioTimestamps}

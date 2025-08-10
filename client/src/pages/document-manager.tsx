@@ -28,6 +28,11 @@ export default function DocumentManager() {
     setCurrentPage(0); // Reset to first page when switching documents
   };
 
+  const handlePageChange = (pageIndex: number) => {
+    console.log('📍 NavigationSidebar: Page changed to', pageIndex);
+    setCurrentPage(pageIndex);
+  };
+
   const handleBackToSelector = () => {
     setSelectedDocument(null);
     setCurrentPage(0);
@@ -47,7 +52,7 @@ export default function DocumentManager() {
             </div>
             <DocumentSelector 
               onDocumentSelect={handleDocumentSelect}
-              selectedDocumentId={selectedDocument?.id || undefined}
+              selectedDocumentId={undefined}
             />
           </div>
         </div>
@@ -100,7 +105,7 @@ export default function DocumentManager() {
           <NavigationSidebar
             currentPage={currentPage}
             totalPages={chunks.length}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
             documentId={selectedDocument.id}
           />
         </div>
@@ -111,7 +116,7 @@ export default function DocumentManager() {
             documentId={selectedDocument.id}
             chunks={chunks}
             currentPage={currentPage}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
           />
         </div>
       </div>

@@ -264,24 +264,166 @@ function generateDemoContent(chunkIndex: number): string {
 }
 
 // Search within demo document
+// Import the paragraph chunking utility
+function generateDemoText(): string {
+  const topics = [
+    { 
+      title: 'The Evolution of Artificial Intelligence and Machine Learning',
+      content: [
+        'Artificial Intelligence has undergone remarkable transformation over the past decade, evolving from theoretical concepts to practical applications that permeate every aspect of our daily lives.',
+        'Machine learning algorithms now power recommendation systems, autonomous vehicles, and medical diagnostic tools with unprecedented accuracy and efficiency.',
+        'The development of neural networks, particularly deep learning architectures, has revolutionized how computers process and understand complex data patterns.',
+        'From natural language processing to computer vision, AI systems demonstrate capabilities that were once thought to be exclusively human domains.'
+      ]
+    },
+    {
+      title: 'Climate Change and Environmental Science Research',
+      content: [
+        'Climate science has reached a critical juncture where the evidence for anthropogenic climate change is overwhelming and undeniable.',
+        'Rising global temperatures, melting ice caps, and extreme weather events demonstrate the urgent need for comprehensive environmental action.',
+        'Research institutions worldwide collaborate to develop climate models that predict future scenarios and inform policy decisions.',
+        'The transition to renewable energy sources represents both a challenge and an opportunity for sustainable development.'
+      ]
+    },
+    {
+      title: 'Modern Web Development and Software Architecture',
+      content: [
+        'Web development has evolved from static HTML pages to dynamic, interactive applications that rival traditional desktop software.',
+        'Modern frameworks like React, Vue, and Angular enable developers to create sophisticated user interfaces with enhanced performance.',
+        'Microservices architecture and cloud computing have transformed how applications are designed, deployed, and scaled.',
+        'The emphasis on user experience, accessibility, and performance optimization drives innovation in web technologies.'
+      ]
+    }
+  ];
+
+  let fullText = 'A4 Format Demo Document - Comprehensive Research Compilation\n\n';
+  
+  // Repeat topics to create substantial content
+  for (let chapter = 1; chapter <= 15; chapter++) {
+    const topic = topics[(chapter - 1) % topics.length];
+    fullText += `Chapter ${chapter}: ${topic.title}\n\n`;
+    
+    for (let section = 1; section <= 4; section++) {
+      fullText += `Section ${section}.\n\n`;
+      
+      // Add multiple paragraphs for each section
+      for (let para = 0; para < topic.content.length; para++) {
+        fullText += topic.content[para] + '\n\n';
+        
+        // Add additional elaboration paragraphs
+        fullText += `This research demonstrates significant implications for the field, providing new insights into the underlying mechanisms and potential applications. The methodology employed in these studies follows rigorous scientific standards and incorporates peer-reviewed protocols.\n\n`;
+        
+        fullText += `Furthermore, the interdisciplinary approach taken in this investigation reveals connections between seemingly disparate domains, opening new avenues for future research and practical implementation.\n\n`;
+      }
+    }
+  }
+
+  return fullText;
+}
+
+function chunkTextByParagraphs(text: string, documentId: string): Array<{
+  id: string;
+  documentId: string;
+  chunkIndex: number;
+  content: string;
+  wordCount: number;
+  startWordIndex: number;
+  endWordIndex: number;
+}> {
+  const maxWordsPerPage = 600; // A4 page capacity
+  const minWordsPerPage = 150; // Minimum before page break
+
+  // Split text into paragraphs (double line breaks or single line breaks)
+  const paragraphs = text
+    .split(/\n\s*\n|\n/) // Split on double newlines or single newlines
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
+
+  if (paragraphs.length === 0) {
+    return [];
+  }
+
+  const chunks: any[] = [];
+  let currentChunk: string[] = [];
+  let currentWordCount = 0;
+  let totalWordIndex = 0;
+  let chunkStartWordIndex = 0;
+
+  for (let i = 0; i < paragraphs.length; i++) {
+    const paragraph = paragraphs[i];
+    const paragraphWords = paragraph.split(/\s+/).filter(w => w.length > 0);
+    const paragraphWordCount = paragraphWords.length;
+
+    // Check if adding this paragraph would exceed the page limit
+    if (currentWordCount > 0 && currentWordCount + paragraphWordCount > maxWordsPerPage) {
+      // Only create chunk if it has meaningful content
+      if (currentWordCount >= minWordsPerPage || i === paragraphs.length - 1) {
+        // Create current chunk
+        chunks.push({
+          id: `${documentId}-chunk-${chunks.length}`,
+          documentId,
+          chunkIndex: chunks.length,
+          content: currentChunk.join('\n\n'),
+          wordCount: currentWordCount,
+          startWordIndex: chunkStartWordIndex,
+          endWordIndex: totalWordIndex - 1
+        });
+
+        // Start new chunk
+        currentChunk = [paragraph];
+        currentWordCount = paragraphWordCount;
+        chunkStartWordIndex = totalWordIndex;
+      } else {
+        // Current chunk is too small, add the paragraph anyway
+        currentChunk.push(paragraph);
+        currentWordCount += paragraphWordCount;
+      }
+    } else {
+      // Add paragraph to current chunk
+      currentChunk.push(paragraph);
+      currentWordCount += paragraphWordCount;
+    }
+
+    totalWordIndex += paragraphWordCount;
+  }
+
+  // Add final chunk if it has content
+  if (currentChunk.length > 0) {
+    chunks.push({
+      id: `${documentId}-chunk-${chunks.length}`,
+      documentId,
+      chunkIndex: chunks.length,
+      content: currentChunk.join('\n\n'),
+      wordCount: currentWordCount,
+      startWordIndex: chunkStartWordIndex,
+      endWordIndex: totalWordIndex - 1
+    });
+  }
+
+  return chunks;
+}
+
 function searchInDemoDocument(query: string): Array<{chunkIndex: number, excerpt: string}> {
   const results: Array<{chunkIndex: number, excerpt: string}> = [];
   
-  // Generate and search through 50 demo chunks
-  for (let i = 0; i < 50; i++) {
-    const content = generateDemoContent(i);
-    if (content.toLowerCase().includes(query.toLowerCase())) {
-      const index = content.toLowerCase().indexOf(query.toLowerCase());
+  // Use the same paragraph-based chunking as the main editor
+  const demoText = generateDemoText();
+  const demoChunks = chunkTextByParagraphs(demoText, 'demo');
+  
+  // Search through the paragraph-based chunks (same as editor)
+  demoChunks.forEach(chunk => {
+    if (chunk.content.toLowerCase().includes(query.toLowerCase())) {
+      const index = chunk.content.toLowerCase().indexOf(query.toLowerCase());
       const start = Math.max(0, index - 50);
-      const end = Math.min(content.length, index + query.length + 50);
-      const excerpt = content.substring(start, end);
+      const end = Math.min(chunk.content.length, index + query.length + 50);
+      const excerpt = chunk.content.substring(start, end);
       
       results.push({
-        chunkIndex: i,
+        chunkIndex: chunk.chunkIndex,
         excerpt: `...${excerpt}...`
       });
     }
-  }
+  });
   
   return results;
 }

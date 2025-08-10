@@ -114,7 +114,7 @@ export function useVirtualization({
     const observer = new IntersectionObserver(
       (entries) => {
         // Find the topmost page that meets our criteria
-        let topMostPage = null;
+        let topMostPage: IntersectionObserverEntry | null = null;
         let topMostPosition = Infinity;
 
         entries.forEach((entry) => {
@@ -129,7 +129,7 @@ export function useVirtualization({
           }
         });
 
-        if (topMostPage) {
+        if (topMostPage && topMostPage.target) {
           const pageElement = topMostPage.target as HTMLElement;
           const pageAttribute = pageElement.getAttribute('data-page');
           if (pageAttribute) {

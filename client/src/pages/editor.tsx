@@ -10,6 +10,7 @@ import { UploadModal } from '@/components/UploadModal';
 import { type Document, type DocumentChunk } from '@shared/schema';
 import { useParams } from 'wouter';
 import { chunkTextByParagraphs, convertToDocumentChunks } from '@/utils/paragraphChunker';
+import { usePerformanceMetrics } from '@/hooks/usePerformanceMetrics';
 
 export default function Editor() {
   const params = useParams();
@@ -172,12 +173,23 @@ export default function Editor() {
   const documentProgress = activeChunks.length > 0 ? 
     ((currentPage + 1) / activeChunks.length) * 100 : 0;
 
+  // Get real performance metrics
+  const performanceMetrics = usePerformanceMetrics({
+    currentPage,
+    totalPages: activeChunks.length,
+    visibleChunks: [], // Will be populated by VirtualizedEditor
+    containerRef: undefined // Will be passed from VirtualizedEditor if needed
+  });
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <EditorToolbar
         documentName={activeDocument.name}
         wordCount={activeDocument.wordCount}
+        memoryUsage={performanceMetrics.memoryUsage}
+        domElements={performanceMetrics.domElements}
+        viewportInfo={performanceMetrics.viewportInfo}
         onSearchClick={() => setShowSearch(true)}
         onSettingsClick={() => {}}
         onUploadClick={() => setShowFileUploader(true)}
@@ -242,8 +254,8 @@ export default function Editor() {
       {/* File Uploader */}
       {showFileUploader && (
         <FileUploader
-          onFileProcessed={handleFileProcessed}
-          onClose={() => setShowFileUploader(false)}
+          onUploadSuccess={handleUploadSuccess}
+          onCancel={() => setShowFileUploader(false)}
         />
       )}
     </div>

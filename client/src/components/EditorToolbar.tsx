@@ -3,9 +3,9 @@ import React from 'react';
 interface EditorToolbarProps {
   documentName: string;
   wordCount: number;
-  memoryUsage?: number;
-  domElements?: number;
-  viewportInfo?: string;
+  memoryUsage: number;
+  domElements: number;
+  viewportInfo: string;
   onSearchClick: () => void;
   onSettingsClick: () => void;
   onUploadClick: () => void;
@@ -14,9 +14,9 @@ interface EditorToolbarProps {
 export function EditorToolbar({
   documentName,
   wordCount,
-  memoryUsage = 24,
-  domElements = 1247,
-  viewportInfo = "Page 23-25",
+  memoryUsage,
+  domElements,
+  viewportInfo,
   onSearchClick,
   onSettingsClick,
   onUploadClick

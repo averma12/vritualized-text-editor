@@ -165,9 +165,10 @@ export default function Editor() {
     setCurrentPage(0); // Reset to first page
   }, []);
 
-  const handleUploadSuccess = useCallback((newDocumentId: string) => {
-    // TODO: Navigate to new document
-    console.log('Upload successful, document ID:', newDocumentId);
+  const handleUploadSuccess = useCallback(() => {
+    // Close the uploader modal after successful upload
+    setShowFileUploader(false);
+    console.log('Upload successful');
   }, []);
 
   const documentProgress = activeChunks.length > 0 ? 

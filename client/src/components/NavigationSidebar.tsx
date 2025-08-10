@@ -4,15 +4,25 @@ import { type DocumentChunk } from '@shared/schema';
 interface NavigationSidebarProps {
   currentPage: number;
   totalPages: number;
-  onPageChange: (pageIndex: number) => void;
-  documentId: string;
+  onPageChange?: (pageIndex: number) => void;
+  onPageClick?: (pageIndex: number) => void;
+  documentId?: string;
+  // Additional props for editor.tsx compatibility
+  chunks?: any[];
+  documentProgress?: number;
+  chunkSize?: number;
+  bufferSize?: number;
+  onChunkSizeChange?: (size: number) => void;
+  onBufferSizeChange?: (size: number) => void;
 }
 
 export function NavigationSidebar({ 
   currentPage, 
   totalPages, 
   onPageChange,
-  documentId
+  onPageClick,
+  documentId,
+  ...otherProps
 }: NavigationSidebarProps) {
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
 
@@ -40,7 +50,12 @@ export function NavigationSidebar({
                 key={pageNumber}
                 onClick={() => {
                   console.log('🖱️ NavigationSidebar: Page clicked', pageNumber, 'index:', pageIndex);
-                  onPageChange(pageIndex);
+                  // Support both onPageChange and onPageClick for compatibility
+                  if (onPageChange) {
+                    onPageChange(pageIndex);
+                  } else if (onPageClick) {
+                    onPageClick(pageIndex);
+                  }
                 }}
                 className={`w-full text-left p-3 rounded-lg border transition-colors ${
                   isActive 

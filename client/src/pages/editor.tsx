@@ -5,6 +5,7 @@ import { NavigationSidebar } from '@/components/NavigationSidebar';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { EditorToolbar } from '@/components/EditorToolbar';
 import { SearchOverlay } from '@/components/SearchOverlay';
+import { FileUploader } from '@/components/FileUploader';
 import { UploadModal } from '@/components/UploadModal';
 import { type Document, type DocumentChunk } from '@shared/schema';
 import { useParams } from 'wouter';
@@ -20,6 +21,17 @@ export default function Editor() {
   const [currentPage, setCurrentPage] = useState(0);
   const [chunkSize, setChunkSize] = useState(2000);
   const [bufferSize, setBufferSize] = useState(2);
+  const [showFileUploader, setShowFileUploader] = useState(false);
+  const [uploadedDocument, setUploadedDocument] = useState<{
+    id: string;
+    name: string;
+    content: string;
+    wordCount: number;
+    audioPath?: string | null;
+    audioDuration?: number | null;
+    wordTimestamps?: any[];
+    chunks: DocumentChunk[];
+  } | null>(null);
 
   // Fetch document data
   const { data: document } = useQuery<Document>({
@@ -84,8 +96,8 @@ export default function Editor() {
     endWordIndex: (index + 1) * 2000 - 1
   }));
 
-  const activeDocument = document || demoDocument;
-  const activeChunks = chunks.length > 0 ? chunks : demoChunks;
+  const activeDocument = uploadedDocument || document || demoDocument;
+  const activeChunks = uploadedDocument?.chunks || (chunks.length > 0 ? chunks : demoChunks);
 
   const handlePlayPause = useCallback(() => {
     setIsPlaying(prev => !prev);
@@ -110,6 +122,20 @@ export default function Editor() {
     window.dispatchEvent(event);
   }, []);
 
+  const handleFileProcessed = useCallback((processedDocument: {
+    id: string;
+    name: string;
+    content: string;
+    wordCount: number;
+    audioPath?: string | null;
+    audioDuration?: number | null;
+    wordTimestamps?: any[];
+    chunks: DocumentChunk[];
+  }) => {
+    setUploadedDocument(processedDocument);
+    setCurrentPage(0); // Reset to first page
+  }, []);
+
   const handleUploadSuccess = useCallback((newDocumentId: string) => {
     // TODO: Navigate to new document
     console.log('Upload successful, document ID:', newDocumentId);
@@ -126,7 +152,7 @@ export default function Editor() {
         wordCount={activeDocument.wordCount}
         onSearchClick={() => setShowSearch(true)}
         onSettingsClick={() => {}}
-        onUploadClick={() => setShowUpload(true)}
+        onUploadClick={() => setShowFileUploader(true)}
       />
 
       <div className="flex h-screen overflow-hidden">
@@ -184,6 +210,14 @@ export default function Editor() {
         onClose={() => setShowUpload(false)}
         onUploadSuccess={handleUploadSuccess}
       />
+
+      {/* File Uploader */}
+      {showFileUploader && (
+        <FileUploader
+          onFileProcessed={handleFileProcessed}
+          onClose={() => setShowFileUploader(false)}
+        />
+      )}
     </div>
   );
 }

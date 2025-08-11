@@ -55,22 +55,25 @@ export function VirtualizedEditor({
   // Use external page control if provided, otherwise use internal
   const effectiveCurrentPage = externalCurrentPage !== undefined ? externalCurrentPage : internalCurrentPage;
   
+  // Flag to prevent circular updates during programmatic scrolling
+  const [isScrollingProgrammatically, setIsScrollingProgrammatically] = useState(false);
+
   // Handle external page changes by ensuring target page is rendered first
   useEffect(() => {
     if (externalCurrentPage !== undefined && externalCurrentPage !== internalCurrentPage) {
-      console.log('🔄 VirtualizedEditor: External page change to', externalCurrentPage);
-      // First call scrollToChunk to ensure the target page gets rendered
+      setIsScrollingProgrammatically(true);
       scrollToChunk(externalCurrentPage);
+      // Reset flag after a brief delay to allow intersection observer to settle
+      setTimeout(() => setIsScrollingProgrammatically(false), 200);
     }
   }, [externalCurrentPage, internalCurrentPage, scrollToChunk]);
 
-  // Always notify external when internal page changes (from scrolling/intersection observer)
+  // Only notify external when internal page changes from user scrolling (not programmatic)
   useEffect(() => {
-    if (externalOnPageChange) {
-      console.log('📢 VirtualizedEditor: Notifying external about page change to', internalCurrentPage + 1);
+    if (externalOnPageChange && !isScrollingProgrammatically) {
       externalOnPageChange(internalCurrentPage);
     }
-  }, [internalCurrentPage, externalOnPageChange]);
+  }, [internalCurrentPage, externalOnPageChange, isScrollingProgrammatically]);
 
   // Auto-scroll to current audio position
   useEffect(() => {

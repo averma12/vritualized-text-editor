@@ -14,56 +14,26 @@ export function useVirtualization({
   chunkSize,
   bufferSize
 }: UseVirtualizationProps) {
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: bufferSize });
   const [currentPage, setCurrentPage] = useState(0);
 
   const totalPages = chunks.length;
 
   const visibleChunks = useMemo(() => {
-    const start = Math.max(0, visibleRange.start - bufferSize);
-    const end = Math.min(chunks.length, visibleRange.end + bufferSize);
+    // Calculate visible range centered around current page
+    const start = Math.max(0, currentPage - bufferSize);
+    const end = Math.min(chunks.length, currentPage + bufferSize + 1);
     const visible = chunks.slice(start, end);
     
     // Log virtualization info for testing
     console.log(`🔧 Virtualization: Rendering ${visible.length} chunks (${start}-${end-1}) out of ${chunks.length} total chunks`);
     
     return visible;
-  }, [chunks, visibleRange, bufferSize]);
+  }, [chunks, currentPage, bufferSize]);
 
   const handleScroll = useCallback(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    // Only update visible range, let intersection observer handle page detection
-    const scrollTop = container.scrollTop;
-    const containerHeight = container.clientHeight;
-
-    // Find the topmost visible page for range calculation
-    const pages = Array.from(container.querySelectorAll('[data-page]'));
-    let topMostPageIndex = 0;
-    
-    for (const page of pages) {
-      const rect = page.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-      
-      // Find the first page whose top is at or above the container top
-      if (rect.top <= containerRect.top + 100) { // 100px tolerance
-        const pageNum = parseInt(page.getAttribute('data-page') || '1');
-        topMostPageIndex = pageNum - 1;
-      } else {
-        break;
-      }
-    }
-
-    // Update visible range based on the topmost visible page
-    const bufferStart = Math.max(0, topMostPageIndex - bufferSize);
-    const bufferEnd = Math.min(chunks.length, topMostPageIndex + 3 + bufferSize); // Show 3 pages ahead
-    
-    setVisibleRange({
-      start: bufferStart,
-      end: bufferEnd
-    });
-  }, [containerRef, chunks.length, bufferSize]);
+    // Don't interfere with intersection observer - let it handle page detection
+    // This prevents race conditions between scroll handler and intersection observer
+  }, []);
 
   const scrollToChunk = useCallback((chunkIndex: number) => {
     console.log('🎯 scrollToChunk called with index:', chunkIndex);
@@ -76,17 +46,7 @@ export function useVirtualization({
     // Prevent scroll event conflicts during navigation
     container.style.scrollBehavior = 'auto';
     
-    // First, ensure the target chunk is rendered by updating the visible range
-    const newStart = Math.max(0, chunkIndex - bufferSize);
-    const newEnd = Math.min(chunks.length, chunkIndex + bufferSize + 1);
-    
-    console.log('📊 scrollToChunk: Updating visible range', newStart, 'to', newEnd);
-    setVisibleRange({
-      start: newStart,
-      end: newEnd
-    });
-
-    // Set current page immediately to prevent conflicts
+    // Set current page immediately - this will trigger re-render with correct chunks
     setCurrentPage(chunkIndex);
 
     // Small delay to ensure DOM is updated, then scroll precisely to the TOP
@@ -186,7 +146,6 @@ export function useVirtualization({
     totalPages,
     currentPage,
     handleScroll,
-    scrollToChunk,
-    visibleRange
+    scrollToChunk
   };
 }

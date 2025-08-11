@@ -214,6 +214,8 @@ export default function Editor() {
         <VirtualizedEditor
           documentId={activeDocument.id}
           chunks={activeChunks}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
           audioTimestamps={activeDocument.wordTimestamps as any}
           currentPlaybackTime={currentPlaybackTime}
           chunkSize={chunkSize}

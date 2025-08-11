@@ -31,9 +31,12 @@ export function useVirtualization({
   }, [chunks, currentPage, bufferSize]);
 
   const handleScroll = useCallback(() => {
-    // Don't interfere with intersection observer - let it handle page detection
-    // This prevents race conditions between scroll handler and intersection observer
-  }, []);
+    // Let intersection observer handle page detection, but we can add scroll-based optimizations here if needed
+    const container = containerRef.current;
+    if (!container) return;
+    
+    // Optional: Could add scroll-based performance optimizations here
+  }, [containerRef]);
 
   const scrollToChunk = useCallback((chunkIndex: number) => {
     console.log('🎯 scrollToChunk called with index:', chunkIndex);
@@ -73,63 +76,97 @@ export function useVirtualization({
     }, 50);
   }, [containerRef, bufferSize, chunks.length]);
 
-  // Set up intersection observer for accurate page detection
+  // Set up intersection observer for accurate page detection during scrolling
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    let lastIntersectingPage = -1;
+    let isScrolling = false;
+    let scrollTimer: NodeJS.Timeout;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        // Find the topmost page that meets our criteria
-        let topMostPage: IntersectionObserverEntry | null = null;
-        let topMostPosition = Infinity;
-
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.1 && entry.target instanceof HTMLElement) {
+        console.log('👁️ IntersectionObserver triggered with', entries.length, 'entries');
+        
+        // Find all intersecting pages and sort by how much they're visible
+        const intersectingPages = entries
+          .filter(entry => entry.isIntersecting && entry.target instanceof HTMLElement)
+          .map(entry => {
+            const pageElement = entry.target as HTMLElement;
+            const pageAttribute = pageElement.getAttribute('data-page');
+            const pageIndex = pageAttribute ? parseInt(pageAttribute) - 1 : -1;
             const rect = entry.boundingClientRect;
+            const containerRect = container.getBoundingClientRect();
             
-            // Prefer pages whose top is closer to the container top
-            if (rect.top < topMostPosition) {
-              topMostPosition = rect.top;
-              topMostPage = entry;
+            // Calculate how far the page is from the ideal position (top of container)
+            const distanceFromTop = Math.abs(rect.top - containerRect.top);
+            
+            return {
+              pageIndex,
+              distanceFromTop,
+              intersectionRatio: entry.intersectionRatio,
+              rect,
+              entry
+            };
+          })
+          .filter(page => page.pageIndex >= 0)
+          .sort((a, b) => {
+            // Prefer pages that are closer to the top and have higher intersection ratio
+            if (Math.abs(a.distanceFromTop - b.distanceFromTop) < 50) {
+              return b.intersectionRatio - a.intersectionRatio;
             }
-          }
-        });
+            return a.distanceFromTop - b.distanceFromTop;
+          });
 
-        if (topMostPage?.target instanceof HTMLElement) {
-          const pageElement = topMostPage.target as HTMLElement;
-          const pageAttribute = pageElement.getAttribute('data-page');
-          if (pageAttribute) {
-            const pageIndex = parseInt(pageAttribute) - 1;
-            if (pageIndex !== lastIntersectingPage) {
-              setCurrentPage(pageIndex);
-              lastIntersectingPage = pageIndex;
-            }
+        if (intersectingPages.length > 0) {
+          const newCurrentPage = intersectingPages[0].pageIndex;
+          console.log('👁️ IntersectionObserver: New current page detected:', newCurrentPage + 1, 
+                      'distance from top:', intersectingPages[0].distanceFromTop, 
+                      'intersection ratio:', intersectingPages[0].intersectionRatio);
+          
+          if (newCurrentPage !== currentPage) {
+            console.log('👁️ IntersectionObserver: Updating current page from', currentPage + 1, 'to', newCurrentPage + 1);
+            setCurrentPage(newCurrentPage);
           }
         }
       },
       {
         root: container,
-        rootMargin: '-10% 0px -50% 0px', // More precise: page is "current" when its top 10% is visible
-        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1.0]
+        rootMargin: '-20% 0px -20% 0px', // Page becomes "current" when it's well within view
+        threshold: [0, 0.1, 0.3, 0.5, 0.7, 1.0]
       }
     );
 
-    // Re-observe pages when visible chunks change
+    // Function to observe all visible pages
     const observePages = () => {
+      observer.disconnect(); // Clear previous observations
       const pageElements = container.querySelectorAll('[data-page]');
-      pageElements.forEach(el => observer.observe(el));
+      console.log('👁️ Observing', pageElements.length, 'page elements');
+      pageElements.forEach(el => {
+        observer.observe(el);
+        const pageNum = el.getAttribute('data-page');
+        console.log('👁️ Observing page', pageNum);
+      });
     };
 
-    // Initial observation with a slight delay to ensure DOM is ready
+    // Initial observation
     setTimeout(observePages, 100);
 
-    // Re-observe when content changes
-    const mutationObserver = new MutationObserver(() => {
-      observer.disconnect();
-      setTimeout(observePages, 50);
+    // Re-observe when content changes (when new chunks are rendered)
+    const mutationObserver = new MutationObserver((mutations) => {
+      let shouldReobserve = false;
+      mutations.forEach(mutation => {
+        if (mutation.type === 'childList' && 
+            Array.from(mutation.addedNodes).some(node => 
+              node instanceof Element && node.hasAttribute('data-page'))) {
+          shouldReobserve = true;
+        }
+      });
+      
+      if (shouldReobserve) {
+        console.log('👁️ DOM changed, re-observing pages');
+        setTimeout(observePages, 50);
+      }
     });
 
     mutationObserver.observe(container, { childList: true, subtree: true });
@@ -138,7 +175,7 @@ export function useVirtualization({
       observer.disconnect();
       mutationObserver.disconnect();
     };
-  }, [containerRef]);
+  }, [containerRef, currentPage]); // Include currentPage in dependencies
 
   return {
     visibleChunks,

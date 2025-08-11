@@ -64,12 +64,13 @@ export function VirtualizedEditor({
     }
   }, [externalCurrentPage, internalCurrentPage, scrollToChunk]);
 
-  // Notify external when internal page changes (from scrolling)
+  // Always notify external when internal page changes (from scrolling/intersection observer)
   useEffect(() => {
-    if (externalOnPageChange && externalCurrentPage === undefined) {
+    if (externalOnPageChange) {
+      console.log('📢 VirtualizedEditor: Notifying external about page change to', internalCurrentPage + 1);
       externalOnPageChange(internalCurrentPage);
     }
-  }, [internalCurrentPage, externalOnPageChange, externalCurrentPage]);
+  }, [internalCurrentPage, externalOnPageChange]);
 
   // Auto-scroll to current audio position
   useEffect(() => {

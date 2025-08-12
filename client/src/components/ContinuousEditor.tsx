@@ -10,6 +10,8 @@ interface ContinuousEditorProps {
   currentPlaybackTime?: number;
   onScroll?: (scrollProgress: number) => void;
   onContentChange?: (content: string) => void;
+  searchTerm?: string;
+  onSearchResultsFound?: (results: number) => void;
 }
 
 export function ContinuousEditor({ 
@@ -18,7 +20,9 @@ export function ContinuousEditor({
   audioTimestamps = [], 
   currentPlaybackTime = 0,
   onScroll,
-  onContentChange
+  onContentChange,
+  searchTerm = '',
+  onSearchResultsFound
 }: ContinuousEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -31,15 +35,20 @@ export function ContinuousEditor({
     chunks
   });
 
-  // Handle scrolling
+  // Handle scrolling with better calculation
   const handleScrollEvent = useCallback((e: React.UIEvent) => {
     const container = e.currentTarget as HTMLDivElement;
     const scrollTop = container.scrollTop;
     const scrollHeight = container.scrollHeight;
     const clientHeight = container.clientHeight;
+    const maxScroll = scrollHeight - clientHeight;
     
-    // Calculate scroll progress (0-1)
-    const scrollProgress = Math.max(0, Math.min(1, scrollTop / Math.max(1, scrollHeight - clientHeight)));
+    // Calculate scroll progress (0-1) - more precise calculation
+    let scrollProgress = 0;
+    if (maxScroll > 0) {
+      scrollProgress = Math.max(0, Math.min(1, scrollTop / maxScroll));
+    }
+    
     onScroll?.(scrollProgress);
   }, [onScroll]);
 
@@ -52,23 +61,38 @@ export function ContinuousEditor({
     onContentChange?.(newContent);
   }, [onContentChange]);
 
-  // Render continuous text with word highlighting
+  // Render continuous text with word highlighting and search highlighting
   const renderContent = () => {
     const paragraphs = combinedContent.split('\n\n').filter((p: string) => p.trim());
     let globalWordIndex = 0;
+    let searchMatches = 0;
 
     return paragraphs.map((paragraph: string, paraIndex: number) => {
       const words = paragraph.split(/\s+/).filter((w: string) => w.length > 0);
-      const paragraphStartIndex = globalWordIndex;
       
       const renderedWords = words.map((word: string, wordIndex: number) => {
         const currentGlobalIndex = globalWordIndex++;
         const isHighlighted = highlightedWordIndex !== -1 && currentGlobalIndex === highlightedWordIndex;
         
+        // Check for search matches
+        const isSearchMatch = searchTerm && searchTerm.length > 2 && 
+          word.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        if (isSearchMatch) {
+          searchMatches++;
+        }
+        
+        let className = '';
+        if (isHighlighted) {
+          className = 'bg-yellow-300 rounded px-1';
+        } else if (isSearchMatch) {
+          className = 'bg-blue-200 rounded px-1';
+        }
+        
         return (
           <span
             key={`${paraIndex}-${wordIndex}`}
-            className={isHighlighted ? 'bg-yellow-300 rounded px-1' : ''}
+            className={className}
             data-word-index={currentGlobalIndex}
           >
             {word}

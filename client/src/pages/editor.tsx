@@ -19,6 +19,7 @@ export default function Editor() {
   const [currentPlaybackTime, setCurrentPlaybackTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [currentSection, setCurrentSection] = useState(0);
@@ -146,9 +147,18 @@ export default function Editor() {
   
   const handleScroll = useCallback((progress: number) => {
     setScrollProgress(progress);
-    const sectionIndex = Math.floor(progress * activeChunks.length);
-    setCurrentSection(Math.max(0, Math.min(activeChunks.length - 1, sectionIndex)));
+    // Better calculation for current section based on scroll progress
+    const totalSections = Math.max(1, activeChunks.length);
+    const sectionIndex = Math.floor(progress * totalSections);
+    setCurrentSection(Math.max(0, Math.min(totalSections - 1, sectionIndex)));
   }, [activeChunks.length]);
+  
+  const handleSearch = useCallback((term: string) => {
+    setSearchTerm(term);
+    if (term.length < 2) {
+      setSearchTerm('');
+    }
+  }, []);
 
   const handleSearchResultClick = useCallback((chunkIndex: number) => {
     const progress = chunkIndex / Math.max(1, activeChunks.length - 1);
@@ -206,6 +216,7 @@ export default function Editor() {
           audioTimestamps={activeDocument.wordTimestamps as any}
           currentPlaybackTime={currentPlaybackTime}
           onScroll={handleScroll}
+          searchTerm={searchTerm}
           onContentChange={(content) => {
             // Handle content changes - could save to backend
             console.log('Document content changed:', content.length, 'characters');
@@ -218,10 +229,7 @@ export default function Editor() {
           totalChunks={activeChunks.length}
           currentChunk={currentSection}
           onScrollTo={handleScrollTo}
-          onSearch={(term) => {
-            setShowSearch(true);
-            // Could implement inline search here
-          }}
+          onSearch={handleSearch}
         />
       </div>
 

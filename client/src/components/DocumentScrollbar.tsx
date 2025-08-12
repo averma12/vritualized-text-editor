@@ -24,13 +24,16 @@ export function DocumentScrollbar({
   const handleJumpTo = () => {
     const chunkNumber = parseInt(jumpTo);
     if (!isNaN(chunkNumber) && chunkNumber >= 1 && chunkNumber <= totalChunks) {
-      const progress = (chunkNumber - 1) / (totalChunks - 1);
+      const progress = Math.max(0, Math.min(1, (chunkNumber - 1) / Math.max(1, totalChunks - 1)));
       onScrollTo(progress);
+      setJumpTo(''); // Clear input after navigation
     }
   };
 
   const handleSearch = () => {
-    onSearch?.(searchTerm);
+    if (searchTerm.trim()) {
+      onSearch?.(searchTerm.trim());
+    }
   };
 
   return (

@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { VirtualizedEditor } from '@/components/VirtualizedEditor';
-import { NavigationSidebar } from '@/components/NavigationSidebar';
+import { ContinuousEditor } from '@/components/ContinuousEditor';
+import { DocumentScrollbar } from '@/components/DocumentScrollbar';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { EditorToolbar } from '@/components/EditorToolbar';
 import { SearchOverlay } from '@/components/SearchOverlay';
@@ -20,7 +20,8 @@ export default function Editor() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [currentSection, setCurrentSection] = useState(0);
   const [chunkSize, setChunkSize] = useState(2000);
   const [bufferSize, setBufferSize] = useState(2);
   const [showFileUploader, setShowFileUploader] = useState(false);
@@ -136,20 +137,24 @@ export default function Editor() {
     setCurrentPlaybackTime(time);
   }, []);
 
-  const handlePageClick = useCallback((pageIndex: number) => {
-    setCurrentPage(pageIndex);
-    // Trigger scroll to the selected page
-    const event = new CustomEvent('scrollToChunk', { detail: pageIndex });
-    window.dispatchEvent(event);
-  }, []);
+  const handleScrollTo = useCallback((progress: number) => {
+    setScrollProgress(progress);
+    // Convert progress to section index for tracking
+    const sectionIndex = Math.floor(progress * activeChunks.length);
+    setCurrentSection(Math.max(0, Math.min(activeChunks.length - 1, sectionIndex)));
+  }, [activeChunks.length]);
+  
+  const handleScroll = useCallback((progress: number) => {
+    setScrollProgress(progress);
+    const sectionIndex = Math.floor(progress * activeChunks.length);
+    setCurrentSection(Math.max(0, Math.min(activeChunks.length - 1, sectionIndex)));
+  }, [activeChunks.length]);
 
   const handleSearchResultClick = useCallback((chunkIndex: number) => {
-    setCurrentPage(chunkIndex);
+    const progress = chunkIndex / Math.max(1, activeChunks.length - 1);
+    handleScrollTo(progress);
     setShowSearch(false);
-    // Scroll to the specific chunk
-    const event = new CustomEvent('scrollToChunk', { detail: chunkIndex });
-    window.dispatchEvent(event);
-  }, []);
+  }, [handleScrollTo, activeChunks.length]);
 
   const handleFileProcessed = useCallback((processedDocument: {
     id: string;
@@ -162,7 +167,7 @@ export default function Editor() {
     chunks: DocumentChunk[];
   }) => {
     setUploadedDocument(processedDocument);
-    setCurrentPage(0); // Reset to first page
+    setScrollProgress(0); // Reset to top
   }, []);
 
   const handleUploadSuccess = useCallback(() => {
@@ -171,15 +176,12 @@ export default function Editor() {
     console.log('Upload successful');
   }, []);
 
-  const documentProgress = activeChunks.length > 0 ? 
-    ((currentPage + 1) / activeChunks.length) * 100 : 0;
-
   // Get real performance metrics
   const performanceMetrics = usePerformanceMetrics({
-    currentPage,
+    currentPage: currentSection,
     totalPages: activeChunks.length,
-    visibleChunks: [], // Will be populated by VirtualizedEditor
-    containerRef: undefined // Will be passed from VirtualizedEditor if needed
+    visibleChunks: [], // Will be populated by ContinuousEditor
+    containerRef: undefined // Will be passed from ContinuousEditor if needed
   });
 
   return (
@@ -197,29 +199,29 @@ export default function Editor() {
       />
 
       <div className="flex h-screen overflow-hidden">
-        {/* Navigation Sidebar */}
-        <NavigationSidebar
-          chunks={activeChunks}
-          currentPage={currentPage}
-          totalPages={activeChunks.length}
-          onPageClick={handlePageClick}
-          documentProgress={documentProgress}
-          chunkSize={chunkSize}
-          bufferSize={bufferSize}
-          onChunkSizeChange={setChunkSize}
-          onBufferSizeChange={setBufferSize}
-        />
-        
-        {/* Main Editor */}
-        <VirtualizedEditor
+        {/* Main Continuous Editor - Full width seamless experience */}
+        <ContinuousEditor
           documentId={activeDocument.id}
           chunks={activeChunks}
-          currentPage={currentPage}
-          onPageChange={setCurrentPage}
           audioTimestamps={activeDocument.wordTimestamps as any}
           currentPlaybackTime={currentPlaybackTime}
-          chunkSize={chunkSize}
-          bufferSize={bufferSize}
+          onScroll={handleScroll}
+          onContentChange={(content) => {
+            // Handle content changes - could save to backend
+            console.log('Document content changed:', content.length, 'characters');
+          }}
+        />
+        
+        {/* Minimal Document Scrollbar - Replaces sidebar */}
+        <DocumentScrollbar
+          scrollProgress={scrollProgress}
+          totalChunks={activeChunks.length}
+          currentChunk={currentSection}
+          onScrollTo={handleScrollTo}
+          onSearch={(term) => {
+            setShowSearch(true);
+            // Could implement inline search here
+          }}
         />
       </div>
 

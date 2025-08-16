@@ -37,19 +37,17 @@ const ChunkRenderer = memo(({
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   
-  // Apply CSS transforms for positioning (GPU accelerated)
+  // Apply CSS positioning (avoid transforms that cause overlap)
   const style = useMemo(() => ({
     position: 'absolute' as const,
-    top: 0,
+    top: `${offset}px`,
     left: 0,
     right: 0,
     height: `${height}px`,
-    transform: `translateY(${offset}px)`,
-    willChange: isVisible ? 'transform' : 'auto',
-    opacity: isVisible ? 1 : 0, // Hide completely when not visible
+    visibility: isVisible ? 'visible' as const : 'hidden' as const,
     pointerEvents: isVisible ? 'auto' as const : 'none' as const,
-    transition: 'opacity 0.15s ease-in-out',
-    minHeight: `${height}px`
+    zIndex: isVisible ? 1 : 0,
+    contain: 'layout style paint'
   }), [offset, height, isVisible]);
   
   // Use simple text content - let contentEditable handle formatting

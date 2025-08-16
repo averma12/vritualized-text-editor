@@ -63,59 +63,26 @@ export function useVirtualScroll({
   const virtualItems = useMemo(() => {
     const items: VirtualItem[] = [];
     
-    // Add visible items
+    // Add visible items with proper positioning
     for (let i = visibleRange.startIndex; i <= visibleRange.endIndex; i++) {
-      const cached = cacheRef.current.get(i);
+      if (i >= chunks.length) continue; // Safety check
       
-      if (cached) {
-        items.push({ ...cached, isVisible: true });
-      } else {
-        const item: VirtualItem = {
-          chunk: chunks[i],
-          index: i,
-          offset: i * itemHeight,
-          height: itemHeight,
-          isVisible: true,
-          isPrefetched: false
-        };
-        cacheRef.current.set(i, item);
-        items.push(item);
-      }
+      const item: VirtualItem = {
+        chunk: chunks[i],
+        index: i,
+        offset: i * itemHeight, // Each chunk at its proper position
+        height: itemHeight,
+        isVisible: true,
+        isPrefetched: false
+      };
+      items.push(item);
     }
     
-    // Add prefetch items (invisible but pre-rendered)
-    if (prefetchRange) {
-      for (let i = prefetchRange.prefetchStart; i <= prefetchRange.prefetchEnd; i++) {
-        const cached = cacheRef.current.get(i);
-        
-        if (!cached) {
-          const item: VirtualItem = {
-            chunk: chunks[i],
-            index: i,
-            offset: i * itemHeight,
-            height: itemHeight,
-            isVisible: false,
-            isPrefetched: true
-          };
-          cacheRef.current.set(i, item);
-          items.push(item);
-        }
-      }
-    }
+    // Simplified: Only render visible items to prevent overlapping
+    // Remove prefetch for now to debug positioning
     
-    // Clean up old cache entries to prevent memory leaks
-    if (cacheRef.current.size > chunks.length * 0.3) {
-      const keepIndices = new Set(items.map(item => item.index));
-      const toDelete: number[] = [];
-      
-      cacheRef.current.forEach((_, index) => {
-        if (!keepIndices.has(index)) {
-          toDelete.push(index);
-        }
-      });
-      
-      toDelete.forEach(index => cacheRef.current.delete(index));
-    }
+    // Simplified cache management - clear cache for clean positioning
+    cacheRef.current.clear();
     
     return items;
   }, [visibleRange, prefetchRange, chunks, itemHeight]);

@@ -22,7 +22,7 @@ export function useVirtualScroll({
   chunks,
   itemHeight,
   containerHeight,
-  overscan = 8,
+  overscan = 1, // Minimal overscan to prevent interference
   scrollThreshold = 0.8
 }: VirtualScrollOptions) {
   const [scrollTop, setScrollTop] = useState(0);

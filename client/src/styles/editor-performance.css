@@ -75,14 +75,19 @@
   isolation: isolate;
   background-color: white;
   border-bottom: 1px solid transparent; /* Prevent margin collapse */
+  will-change: transform; /* Optimize for position changes */
+  contain: layout style paint size; /* Strict containment */
 }
 
 .chunk-container[data-visible="true"] {
   z-index: 10;
+  pointer-events: auto;
 }
 
 .chunk-container[data-visible="false"] {
-  z-index: 0;
+  z-index: -1;
+  pointer-events: none;
+  visibility: hidden; /* Ensure complete hiding */
 }
 
 /* Text formatting */

@@ -47,11 +47,13 @@ const ChunkRenderer = memo(({
     height: `${height}px`,
     visibility: isVisible ? 'visible' as const : 'hidden' as const,
     pointerEvents: isVisible ? 'auto' as const : 'none' as const,
-    zIndex: isVisible ? 1 : 0, // Keep all visible chunks at same level
+    zIndex: isVisible ? 10 + index : -1, // Unique z-index per chunk
     contain: 'layout style paint size',
     isolation: 'isolate' as const, // Create new stacking context
     backgroundColor: 'white', // Ensure opaque background
-    overflow: 'hidden' // Prevent content bleeding
+    overflow: 'hidden', // Prevent content bleeding
+    clipPath: 'inset(0)', // Create isolation boundary
+    transform: 'translateZ(0)' // Force layer creation
   }), [offset, height, isVisible, index]);
   
   // Use simple text content - let contentEditable handle formatting
@@ -62,12 +64,21 @@ const ChunkRenderer = memo(({
   const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
     if (!isVisible || !onContentChange || !contentRef.current) return;
     
+    // Get current selection to check if user is actively typing
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    
     // Debounce content changes to prevent rapid updates
     const newContent = contentRef.current.innerText || '';
     
-    // Only update if content actually changed significantly
-    if (Math.abs(newContent.length - chunk.content.length) > 5) {
-      onContentChange(newContent);
+    // Only update if content actually changed significantly AND user stopped typing
+    if (Math.abs(newContent.length - chunk.content.length) > 10) {
+      // Delay update to reduce conflicts
+      setTimeout(() => {
+        if (contentRef.current) {
+          onContentChange(contentRef.current.innerText || '');
+        }
+      }, 300);
     }
   }, [onContentChange, isVisible, chunk.content.length]);
   

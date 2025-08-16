@@ -46,7 +46,7 @@ const ChunkRenderer = memo(({
     height: `${height}px`,
     transform: `translateY(${offset}px)`,
     willChange: isVisible ? 'transform' : 'auto',
-    opacity: isVisible ? 1 : 0.3, // Keep slightly visible to prevent jarring transitions
+    opacity: isVisible ? 1 : 0.1, // Keep barely visible to prevent jarring transitions
     pointerEvents: isVisible ? 'auto' as const : 'none' as const,
     transition: 'opacity 0.15s ease-in-out',
     minHeight: `${height}px`, // Ensure minimum height is maintained
@@ -103,24 +103,42 @@ const ChunkRenderer = memo(({
     if (onContentChange && contentRef.current) {
       const newContent = contentRef.current.innerText || contentRef.current.textContent || '';
       onContentChange(newContent);
+      
+      // Maintain content structure integrity
+      const isEmpty = !newContent.trim();
+      if (isEmpty && contentRef.current.innerHTML.trim() === '') {
+        contentRef.current.innerHTML = '<p class="mb-4 leading-relaxed"><br></p>';
+      }
     }
   }, [onContentChange, isVisible]);
   
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!isVisible) {
+      e.preventDefault();
+      return;
+    }
+
     // Handle Enter key specially to prevent chunk boundary issues
     if (e.key === 'Enter') {
-      if (!isVisible) {
-        e.preventDefault();
-        return;
-      }
-      
-      // Let the default behavior handle it, but ensure proper formatting
+      // Allow default behavior but ensure content persistence
       setTimeout(() => {
         if (contentRef.current && onContentChange) {
-          const newContent = contentRef.current.innerText || contentRef.current.textContent || '';
-          onContentChange(newContent);
+          // Force a re-render to maintain content
+          const currentContent = contentRef.current.innerHTML;
+          const textContent = contentRef.current.innerText || contentRef.current.textContent || '';
+          
+          // Ensure proper paragraph structure
+          if (!currentContent.includes('<p>')) {
+            const paragraphs = textContent.split('\n').filter(p => p.trim());
+            const htmlContent = paragraphs
+              .map(p => `<p class="mb-4 leading-relaxed">${p}</p>`)
+              .join('');
+            contentRef.current.innerHTML = htmlContent || '<p class="mb-4 leading-relaxed"><br></p>';
+          }
+          
+          onContentChange(textContent);
         }
-      }, 10);
+      }, 0);
     }
   }, [isVisible, onContentChange]);
   
@@ -133,6 +151,12 @@ const ChunkRenderer = memo(({
         suppressContentEditableWarning
         onInput={handleInput}
         onKeyDown={handleKeyDown}
+        onPaste={(e) => {
+          // Handle paste to maintain formatting
+          e.preventDefault();
+          const text = e.clipboardData.getData('text/plain');
+          document.execCommand('insertText', false, text);
+        }}
         spellCheck={false}
         data-chunk-index={index}
       >
@@ -173,7 +197,7 @@ export function OptimizedEditor({
     chunks,
     itemHeight: CHUNK_HEIGHT,
     containerHeight: CONTAINER_HEIGHT,
-    overscan: 5, // Increase overscan for better editing experience
+    overscan: 8, // Increase overscan for better editing experience at boundaries
     scrollThreshold: 0.7
   });
   

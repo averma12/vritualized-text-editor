@@ -211,7 +211,7 @@ export default function Editor() {
         onUploadClick={() => setShowFileUploader(true)}
       />
 
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen overflow-hidden" style={{ marginRight: showSearch ? '320px' : '0' }}>
         {/* Optimized Editor with all performance enhancements */}
         <OptimizedEditor
           documentId={activeDocument.id}

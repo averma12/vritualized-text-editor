@@ -40,12 +40,22 @@ export function SearchOverlay({ isVisible, onClose, documentId, onResultClick }:
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40" onClick={onClose}></div>
+      {/* Backdrop - only cover left side, not the search panel area */}
+      <div className="fixed inset-0 right-96 z-40" onClick={onClose}></div>
       
-      {/* Search Overlay */}
-      <div className="fixed top-20 right-6 bg-surface rounded-lg shadow-xl border border-gray-200 w-80 z-50">
-        <div className="p-4">
+      {/* Search Overlay - positioned as sidebar */}
+      <div className="fixed top-0 right-0 h-full bg-white shadow-xl border-l border-gray-200 w-80 z-50 overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Search Document</h3>
+            <button 
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 text-xl"
+            >
+              ×
+            </button>
+          </div>
           <div className="relative mb-3">
             <input 
               type="text" 
@@ -72,8 +82,11 @@ export function SearchOverlay({ isVisible, onClose, documentId, onResultClick }:
             </div>
           )}
           
-          {/* Search Results */}
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+        </div>
+        
+        {/* Search Results */}
+        <div className="p-4">
+          <div className="space-y-2">
             {searchResults.map((result, index) => (
               <div 
                 key={`${result.chunkIndex}-${index}`}

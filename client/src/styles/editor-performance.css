@@ -39,8 +39,42 @@
 .chunk-container {
   backface-visibility: hidden;
   -webkit-font-smoothing: antialiased;
-  contain: layout style paint;
+  contain: layout style;
   will-change: transform;
+  position: relative;
+}
+
+/* Ensure contenteditable behaves properly */
+.chunk-container[data-visible="false"] .editor-content {
+  user-select: none;
+  pointer-events: none;
+}
+
+.chunk-container[data-visible="true"] .editor-content {
+  user-select: text;
+  pointer-events: auto;
+}
+
+/* Prevent contenteditable issues at boundaries */
+.editor-content {
+  outline: none;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.editor-content:focus {
+  outline: none;
+}
+
+/* Maintain paragraph structure */
+.editor-content p {
+  margin: 0 0 1rem 0;
+  min-height: 1.5em;
+}
+
+.editor-content p:last-child {
+  margin-bottom: 0;
 }
 
 /* Soft page boundaries */

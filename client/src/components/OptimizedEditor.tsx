@@ -46,9 +46,11 @@ const ChunkRenderer = memo(({
     height: `${height}px`,
     transform: `translateY(${offset}px)`,
     willChange: isVisible ? 'transform' : 'auto',
-    opacity: isVisible ? 1 : 0,
+    opacity: isVisible ? 1 : 0.3, // Keep slightly visible to prevent jarring transitions
     pointerEvents: isVisible ? 'auto' as const : 'none' as const,
-    transition: 'opacity 0.2s ease-in-out'
+    transition: 'opacity 0.15s ease-in-out',
+    minHeight: `${height}px`, // Ensure minimum height is maintained
+    overflow: 'hidden' // Prevent overflow issues at boundaries
   }), [offset, height, isVisible]);
   
   // Render content with highlights using CSS classes (avoid DOM manipulation)
@@ -92,25 +94,52 @@ const ChunkRenderer = memo(({
   }, [chunk.content, highlightedWordIndex, searchMatches]);
   
   const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+    // Prevent editing if not visible
+    if (!isVisible) {
+      e.preventDefault();
+      return;
+    }
+    
     if (onContentChange && contentRef.current) {
-      const newContent = contentRef.current.textContent || '';
+      const newContent = contentRef.current.innerText || contentRef.current.textContent || '';
       onContentChange(newContent);
     }
-  }, [onContentChange]);
+  }, [onContentChange, isVisible]);
+  
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Handle Enter key specially to prevent chunk boundary issues
+    if (e.key === 'Enter') {
+      if (!isVisible) {
+        e.preventDefault();
+        return;
+      }
+      
+      // Let the default behavior handle it, but ensure proper formatting
+      setTimeout(() => {
+        if (contentRef.current && onContentChange) {
+          const newContent = contentRef.current.innerText || contentRef.current.textContent || '';
+          onContentChange(newContent);
+        }
+      }, 10);
+    }
+  }, [isVisible, onContentChange]);
   
   return (
-    <div style={style} className="chunk-container">
+    <div style={style} className="chunk-container" data-visible={isVisible}>
       <div 
         ref={contentRef}
         className="px-12 py-4 text-base leading-relaxed editor-content"
         contentEditable={isVisible}
         suppressContentEditableWarning
         onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        spellCheck={false}
+        data-chunk-index={index}
       >
         {renderContent}
       </div>
       {/* Soft page boundary indicator */}
-      <div className="page-boundary-indicator" />
+      {index > 0 && <div className="page-boundary-indicator" />}
     </div>
   );
 });
@@ -144,8 +173,8 @@ export function OptimizedEditor({
     chunks,
     itemHeight: CHUNK_HEIGHT,
     containerHeight: CONTAINER_HEIGHT,
-    overscan: 3,
-    scrollThreshold: 0.8
+    overscan: 5, // Increase overscan for better editing experience
+    scrollThreshold: 0.7
   });
   
   // Search worker hook

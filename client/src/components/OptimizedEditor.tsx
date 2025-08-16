@@ -37,18 +37,22 @@ const ChunkRenderer = memo(({
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   
-  // Apply CSS positioning (avoid transforms that cause overlap)
+  // Apply CSS positioning with isolation to prevent overlap
   const style = useMemo(() => ({
     position: 'absolute' as const,
     top: `${offset}px`,
     left: 0,
     right: 0,
+    width: '100%',
     height: `${height}px`,
     visibility: isVisible ? 'visible' as const : 'hidden' as const,
     pointerEvents: isVisible ? 'auto' as const : 'none' as const,
-    zIndex: isVisible ? 1 : 0,
-    contain: 'layout style paint'
-  }), [offset, height, isVisible]);
+    zIndex: isVisible ? 10 + index : 0, // Unique z-index per chunk
+    contain: 'layout style paint size',
+    isolation: 'isolate', // Create new stacking context
+    backgroundColor: 'white', // Ensure opaque background
+    overflow: 'hidden' // Prevent content bleeding
+  }), [offset, height, isVisible, index]);
   
   // Use simple text content - let contentEditable handle formatting
   const renderContent = useMemo(() => {
@@ -220,10 +224,10 @@ export function OptimizedEditor({
               minHeight: '100vh'
             }}
           >
-            {/* Render only visible chunks */}
+            {/* Render only visible chunks with unique keys */}
             {virtualItems.map(item => (
               <ChunkRenderer
-                key={item.index}
+                key={`chunk-${item.index}-${item.chunk.id || item.index}`}
                 chunk={item.chunk}
                 index={item.index}
                 offset={item.offset}

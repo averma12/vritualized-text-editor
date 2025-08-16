@@ -63,14 +63,17 @@ export function useVirtualScroll({
   const virtualItems = useMemo(() => {
     const items: VirtualItem[] = [];
     
-    // Add visible items with proper positioning
+    // Add visible items with strict positioning
+    const processedIndices = new Set<number>();
+    
     for (let i = visibleRange.startIndex; i <= visibleRange.endIndex; i++) {
-      if (i >= chunks.length) continue; // Safety check
+      if (i >= chunks.length || processedIndices.has(i)) continue;
       
+      processedIndices.add(i);
       const item: VirtualItem = {
         chunk: chunks[i],
         index: i,
-        offset: i * itemHeight, // Each chunk at its proper position
+        offset: i * itemHeight, // Strict sequential positioning
         height: itemHeight,
         isVisible: true,
         isPrefetched: false

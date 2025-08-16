@@ -61,15 +61,34 @@
   word-wrap: break-word;
   white-space: pre-wrap;
   overflow-wrap: break-word;
+  position: relative;
+  z-index: 1;
+  background-color: white;
 }
 
 .editor-content:focus {
   outline: none;
 }
 
-/* Simple text formatting */
+/* Chunk container isolation */
+.chunk-container {
+  isolation: isolate;
+  background-color: white;
+  border-bottom: 1px solid transparent; /* Prevent margin collapse */
+}
+
+.chunk-container[data-visible="true"] {
+  z-index: 10;
+}
+
+.chunk-container[data-visible="false"] {
+  z-index: 0;
+}
+
+/* Text formatting */
 .editor-content {
   line-height: 1.75;
+  min-height: 100px;
 }
 
 .editor-content br {

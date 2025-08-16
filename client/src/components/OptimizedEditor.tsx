@@ -52,51 +52,20 @@ const ChunkRenderer = memo(({
     minHeight: `${height}px`
   }), [offset, height, isVisible]);
   
-  // Render content with highlights using CSS classes (avoid DOM manipulation)
+  // Use simple text content - let contentEditable handle formatting
   const renderContent = useMemo(() => {
-    const paragraphs = chunk.content.split('\n\n').filter(p => p.trim());
-    
-    return paragraphs.map((paragraph, pIndex) => {
-      const words = paragraph.split(/\s+/);
-      let wordIndex = 0;
-      
-      const wordElements = words.map((word, wIndex) => {
-        const isHighlighted = highlightedWordIndex === wordIndex++;
-        const isSearchMatch = searchMatches.has(word.toLowerCase());
-        
-        // Use CSS classes for styling (no inline styles)
-        let className = '';
-        if (isHighlighted) {
-          className = 'highlight-audio';
-        } else if (isSearchMatch) {
-          className = 'highlight-search';
-        }
-        
-        return (
-          <span key={`${pIndex}-${wIndex}`}>
-            {wIndex > 0 && ' '}
-            {className ? (
-              <span className={className}>{word}</span>
-            ) : (
-              word
-            )}
-          </span>
-        );
-      });
-      
-      return (
-        <p key={pIndex} className="mb-4 leading-relaxed">
-          {wordElements}
-        </p>
-      );
-    });
-  }, [chunk.content, highlightedWordIndex, searchMatches]);
+    return chunk.content;
+  }, [chunk.content]);
   
   const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
     if (!isVisible) return;
     
     if (onContentChange && contentRef.current) {
-      const newContent = contentRef.current.innerText || '';
+      // Get plain text content, replacing <br> with newlines
+      const newContent = contentRef.current.innerHTML
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]*>/g, '') // Remove other HTML tags
+        .trim();
       onContentChange(newContent);
     }
   }, [onContentChange, isVisible]);
@@ -118,14 +87,10 @@ const ChunkRenderer = memo(({
         suppressContentEditableWarning
         onInput={handleInput}
         onKeyDown={handleKeyDown}
-        onPaste={(e) => {
-          // Allow default paste behavior
-        }}
         spellCheck={false}
         data-chunk-index={index}
-      >
-        {renderContent}
-      </div>
+        dangerouslySetInnerHTML={{ __html: renderContent.replace(/\n/g, '<br>') }}
+      />
       {/* Soft page boundary indicator */}
       {index > 0 && <div className="page-boundary-indicator" />}
     </div>

@@ -67,9 +67,12 @@
   outline: none;
 }
 
-/* Simple paragraph handling - let browser handle naturally */
-.editor-content p {
-  margin: 0 0 1rem 0;
+/* Simple text formatting */
+.editor-content {
+  line-height: 1.75;
+}
+
+.editor-content br {
   line-height: 1.75;
 }
 

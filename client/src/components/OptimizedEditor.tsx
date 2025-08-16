@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo, memo, Fragment } from 'react';
 import { type DocumentChunk } from '@shared/schema';
 import { useVirtualScroll } from '@/hooks/useVirtualScroll';
 import { useSearchWorker } from '@/hooks/useSearchWorker';
@@ -53,25 +53,40 @@ const ChunkRenderer = memo(({
   
   // Render content with highlights using CSS classes (avoid DOM manipulation)
   const renderContent = useMemo(() => {
-    const words = chunk.content.split(/\s+/);
-    let wordIndex = 0;
+    const paragraphs = chunk.content.split('\n\n').filter(p => p.trim());
     
-    return words.map((word, i) => {
-      const isHighlighted = highlightedWordIndex === wordIndex++;
-      const isSearchMatch = searchMatches.has(word.toLowerCase());
+    return paragraphs.map((paragraph, pIndex) => {
+      const words = paragraph.split(/\s+/);
+      let wordIndex = 0;
       
-      // Use CSS classes for styling (no inline styles)
-      let className = 'inline-block mx-1';
-      if (isHighlighted) {
-        className += ' highlight-audio';
-      } else if (isSearchMatch) {
-        className += ' highlight-search';
-      }
+      const wordElements = words.map((word, wIndex) => {
+        const isHighlighted = highlightedWordIndex === wordIndex++;
+        const isSearchMatch = searchMatches.has(word.toLowerCase());
+        
+        // Use CSS classes for styling (no inline styles)
+        let className = '';
+        if (isHighlighted) {
+          className = 'highlight-audio';
+        } else if (isSearchMatch) {
+          className = 'highlight-search';
+        }
+        
+        return (
+          <span key={`${pIndex}-${wIndex}`}>
+            {wIndex > 0 && ' '}
+            {className ? (
+              <span className={className}>{word}</span>
+            ) : (
+              word
+            )}
+          </span>
+        );
+      });
       
       return (
-        <span key={i} className={className}>
-          {word}
-        </span>
+        <p key={pIndex} className="mb-4 leading-relaxed">
+          {wordElements}
+        </p>
       );
     });
   }, [chunk.content, highlightedWordIndex, searchMatches]);
@@ -87,7 +102,7 @@ const ChunkRenderer = memo(({
     <div style={style} className="chunk-container">
       <div 
         ref={contentRef}
-        className="px-12 py-4 text-base leading-relaxed"
+        className="px-12 py-4 text-base leading-relaxed editor-content"
         contentEditable={isVisible}
         suppressContentEditableWarning
         onInput={handleInput}

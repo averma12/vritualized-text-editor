@@ -118,6 +118,11 @@ const ChunkRenderer = memo(({
         onKeyDown={handleKeyDown}
         spellCheck={false}
         data-chunk-index={index}
+        style={{
+          color: 'transparent', // Hide background text
+          userSelect: 'none', // Prevent selection
+          pointerEvents: 'none' // Disable interaction
+        }}
       >
         {renderContent}
       </div>

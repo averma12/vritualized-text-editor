@@ -21,9 +21,9 @@ export function SingleEditorOverlay({
   const editorRef = useRef<HTMLDivElement>(null);
   const lastContentRef = useRef<string>('');
   
-  // Create unified content with section markers
+  // Create unified content without visible section markers
   const unifiedContent = useMemo(() => {
-    return chunks.map((chunk, index) => chunk.content).join('\n\n[SECTION_BREAK]\n\n');
+    return chunks.map((chunk, index) => chunk.content).join('\n\n\n\n');
   }, [chunks]);
   
   // Handle content changes and split back into chunks
@@ -37,7 +37,7 @@ export function SingleEditorOverlay({
     lastContentRef.current = currentContent;
     
     // Split content back into chunks
-    const sections = currentContent.split('\n\n[SECTION_BREAK]\n\n');
+    const sections = currentContent.split('\n\n\n\n');
     
     sections.forEach((content, index) => {
       if (index < chunks.length && content.trim() !== chunks[index].content.trim()) {
@@ -84,11 +84,12 @@ export function SingleEditorOverlay({
       spellCheck={false}
       style={{
         zIndex: 100, // Above all chunks
-        backgroundColor: 'transparent',
+        backgroundColor: 'white', // Opaque white background
         color: 'black',
         whiteSpace: 'pre-wrap',
         wordWrap: 'break-word',
-        minHeight: '100%'
+        minHeight: '100%',
+        lineHeight: 1.75 // Match chunk line height
       }}
     >
       {unifiedContent}

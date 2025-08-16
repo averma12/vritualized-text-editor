@@ -59,11 +59,8 @@ const ChunkRenderer = memo(({
     if (!isVisible) return;
     
     if (onContentChange && contentRef.current) {
-      // Get plain text content, replacing <br> with newlines
-      const newContent = contentRef.current.innerHTML
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<[^>]*>/g, '') // Remove other HTML tags
-        .trim();
+      // Use innerText for consistent content extraction
+      const newContent = contentRef.current.innerText || '';
       onContentChange(newContent);
     }
   }, [onContentChange, isVisible]);
@@ -87,8 +84,9 @@ const ChunkRenderer = memo(({
         onKeyDown={handleKeyDown}
         spellCheck={false}
         data-chunk-index={index}
-        dangerouslySetInnerHTML={{ __html: renderContent.replace(/\n/g, '<br>') }}
-      />
+      >
+        {renderContent}
+      </div>
       {/* Soft page boundary indicator */}
       {index > 0 && <div className="page-boundary-indicator" />}
     </div>

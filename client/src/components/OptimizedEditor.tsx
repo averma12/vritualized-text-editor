@@ -4,6 +4,7 @@ import { useVirtualScroll } from '@/hooks/useVirtualScroll';
 import { useSearchWorker } from '@/hooks/useSearchWorker';
 import { useAudioSync } from '@/hooks/useAudioSync';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { SingleEditorOverlay } from './SingleEditorOverlay';
 
 interface OptimizedEditorProps {
   documentId: string;
@@ -111,7 +112,7 @@ const ChunkRenderer = memo(({
       <div 
         ref={contentRef}
         className="px-12 py-4 text-base leading-relaxed editor-content"
-        contentEditable={isVisible}
+        contentEditable={false}
         suppressContentEditableWarning
         onInput={handleInput}
         onKeyDown={handleKeyDown}
@@ -265,7 +266,7 @@ export function OptimizedEditor({
               minHeight: '100vh'
             }}
           >
-            {/* Render only visible chunks with unique keys */}
+            {/* Render visible chunks as read-only display */}
             {virtualItems.map(item => (
               <ChunkRenderer
                 key={`chunk-${item.index}-${item.chunk.id || item.index}`}
@@ -279,6 +280,16 @@ export function OptimizedEditor({
                 onContentChange={(content) => handleChunkChange(item.index, content)}
               />
             ))}
+            
+            {/* Single unified editor overlay */}
+            <SingleEditorOverlay
+              chunks={chunks}
+              containerRef={viewportRef}
+              onContentChange={handleChunkChange}
+              highlightedWordIndex={highlightedWordIndex}
+              searchMatches={searchMatchWords}
+              searchTerm={searchTerm}
+            />
             
             {/* Performance indicator */}
             {isScrolling && (

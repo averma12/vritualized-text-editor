@@ -49,7 +49,7 @@ const ChunkRenderer = memo(({
     pointerEvents: isVisible ? 'auto' as const : 'none' as const,
     zIndex: isVisible ? 10 + index : 0, // Unique z-index per chunk
     contain: 'layout style paint size',
-    isolation: 'isolate', // Create new stacking context
+    isolation: 'isolate' as const, // Create new stacking context
     backgroundColor: 'white', // Ensure opaque background
     overflow: 'hidden' // Prevent content bleeding
   }), [offset, height, isVisible, index]);
@@ -60,29 +60,21 @@ const ChunkRenderer = memo(({
   }, [chunk.content]);
   
   const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
-    if (!isVisible) return;
-    
-    if (onContentChange && contentRef.current) {
-      // Use innerText for consistent content extraction
-      const newContent = contentRef.current.innerText || '';
-      onContentChange(newContent);
-    }
-  }, [onContentChange, isVisible]);
+    // Disable input handling to prevent conflicts
+    e.preventDefault();
+  }, []);
   
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!isVisible) {
-      e.preventDefault();
-      return;
-    }
-    // Let default behavior handle everything naturally
-  }, [isVisible]);
+    // Disable all key events to prevent editing conflicts
+    e.preventDefault();
+  }, []);
   
   return (
     <div style={style} className="chunk-container" data-visible={isVisible}>
       <div 
         ref={contentRef}
         className="px-12 py-4 text-base leading-relaxed editor-content"
-        contentEditable={isVisible}
+        contentEditable={false}
         suppressContentEditableWarning
         onInput={handleInput}
         onKeyDown={handleKeyDown}

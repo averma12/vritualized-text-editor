@@ -46,11 +46,10 @@ const ChunkRenderer = memo(({
     height: `${height}px`,
     transform: `translateY(${offset}px)`,
     willChange: isVisible ? 'transform' : 'auto',
-    opacity: isVisible ? 1 : 0.1, // Keep barely visible to prevent jarring transitions
+    opacity: isVisible ? 1 : 0, // Hide completely when not visible
     pointerEvents: isVisible ? 'auto' as const : 'none' as const,
     transition: 'opacity 0.15s ease-in-out',
-    minHeight: `${height}px`, // Ensure minimum height is maintained
-    overflow: 'hidden' // Prevent overflow issues at boundaries
+    minHeight: `${height}px`
   }), [offset, height, isVisible]);
   
   // Render content with highlights using CSS classes (avoid DOM manipulation)
@@ -94,21 +93,11 @@ const ChunkRenderer = memo(({
   }, [chunk.content, highlightedWordIndex, searchMatches]);
   
   const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
-    // Prevent editing if not visible
-    if (!isVisible) {
-      e.preventDefault();
-      return;
-    }
+    if (!isVisible) return;
     
     if (onContentChange && contentRef.current) {
-      const newContent = contentRef.current.innerText || contentRef.current.textContent || '';
+      const newContent = contentRef.current.innerText || '';
       onContentChange(newContent);
-      
-      // Maintain content structure integrity
-      const isEmpty = !newContent.trim();
-      if (isEmpty && contentRef.current.innerHTML.trim() === '') {
-        contentRef.current.innerHTML = '<p class="mb-4 leading-relaxed"><br></p>';
-      }
     }
   }, [onContentChange, isVisible]);
   
@@ -117,30 +106,8 @@ const ChunkRenderer = memo(({
       e.preventDefault();
       return;
     }
-
-    // Handle Enter key specially to prevent chunk boundary issues
-    if (e.key === 'Enter') {
-      // Allow default behavior but ensure content persistence
-      setTimeout(() => {
-        if (contentRef.current && onContentChange) {
-          // Force a re-render to maintain content
-          const currentContent = contentRef.current.innerHTML;
-          const textContent = contentRef.current.innerText || contentRef.current.textContent || '';
-          
-          // Ensure proper paragraph structure
-          if (!currentContent.includes('<p>')) {
-            const paragraphs = textContent.split('\n').filter(p => p.trim());
-            const htmlContent = paragraphs
-              .map(p => `<p class="mb-4 leading-relaxed">${p}</p>`)
-              .join('');
-            contentRef.current.innerHTML = htmlContent || '<p class="mb-4 leading-relaxed"><br></p>';
-          }
-          
-          onContentChange(textContent);
-        }
-      }, 0);
-    }
-  }, [isVisible, onContentChange]);
+    // Let default behavior handle everything naturally
+  }, [isVisible]);
   
   return (
     <div style={style} className="chunk-container" data-visible={isVisible}>
@@ -152,10 +119,7 @@ const ChunkRenderer = memo(({
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onPaste={(e) => {
-          // Handle paste to maintain formatting
-          e.preventDefault();
-          const text = e.clipboardData.getData('text/plain');
-          document.execCommand('insertText', false, text);
+          // Allow default paste behavior
         }}
         spellCheck={false}
         data-chunk-index={index}

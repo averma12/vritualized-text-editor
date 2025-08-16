@@ -1,0 +1,166 @@
+/* Performance-optimized CSS for the virtualized editor */
+
+/* Use GPU acceleration for smooth scrolling */
+.optimized-editor-container {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  will-change: scroll-position;
+}
+
+/* Highlight animations using CSS transforms */
+.highlight-audio {
+  background-color: #fef3c7;
+  border-radius: 2px;
+  padding: 0 2px;
+  transition: background-color 0.3s ease;
+  transform: translateZ(0);
+  will-change: background-color;
+}
+
+.highlight-search {
+  background-color: #bfdbfe;
+  border-radius: 2px;
+  padding: 0 2px;
+  transform: translateZ(0);
+  animation: pulse-search 1s ease-in-out;
+}
+
+@keyframes pulse-search {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Fixed-height chunk containers */
+.chunk-container {
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  contain: layout style paint;
+  will-change: transform;
+}
+
+/* Soft page boundaries */
+.page-boundary-indicator {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(229, 231, 235, 0.5) 20%,
+    rgba(229, 231, 235, 0.5) 80%,
+    transparent
+  );
+  margin: 0 48px;
+  pointer-events: none;
+}
+
+/* Handle overflow at boundaries gracefully */
+.chunk-container[data-boundary="top"] {
+  padding-top: 20px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 1) 20px
+  );
+}
+
+.chunk-container[data-boundary="bottom"] {
+  padding-bottom: 20px;
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 1) 20px
+  );
+}
+
+/* Optimize scrollbar for large documents */
+.optimized-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #f3f4f6;
+}
+
+.optimized-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.optimized-scrollbar::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.optimized-scrollbar::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 4px;
+}
+
+.optimized-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Performance indicators */
+.performance-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(31, 41, 55, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  backdrop-filter: blur(10px);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* Loading states */
+.chunk-loading {
+  background: linear-gradient(
+    90deg,
+    #f3f4f6 25%,
+    #e5e7eb 50%,
+    #f3f4f6 75%
+  );
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Optimize font rendering for readability */
+.editor-content {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 16px;
+  line-height: 1.75;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reduce repaints during scroll */
+.scroll-optimized {
+  pointer-events: none;
+}
+
+.scroll-optimized * {
+  pointer-events: none !important;
+}
+
+/* Re-enable pointer events after scroll */
+.scroll-ended {
+  pointer-events: auto;
+}
+
+.scroll-ended * {
+  pointer-events: auto !important;
+}

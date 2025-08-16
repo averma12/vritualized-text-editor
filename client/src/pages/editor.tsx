@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ContinuousEditor } from '@/components/ContinuousEditor';
+import { OptimizedEditor } from '@/components/OptimizedEditor';
 import { DocumentScrollbar } from '@/components/DocumentScrollbar';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { EditorToolbar } from '@/components/EditorToolbar';
@@ -209,17 +209,17 @@ export default function Editor() {
       />
 
       <div className="flex h-screen overflow-hidden">
-        {/* Main Continuous Editor - Full width seamless experience */}
-        <ContinuousEditor
+        {/* Optimized Editor with all performance enhancements */}
+        <OptimizedEditor
           documentId={activeDocument.id}
           chunks={activeChunks}
           audioTimestamps={activeDocument.wordTimestamps as any}
           currentPlaybackTime={currentPlaybackTime}
           onScroll={handleScroll}
           searchTerm={searchTerm}
-          onContentChange={(content) => {
-            // Handle content changes - could save to backend
-            console.log('Document content changed:', content.length, 'characters');
+          onContentChange={(chunkIndex, content) => {
+            // Handle content changes per chunk
+            console.log(`Chunk ${chunkIndex} changed:`, content.length, 'characters');
           }}
         />
         

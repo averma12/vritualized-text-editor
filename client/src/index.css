@@ -5,6 +5,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import performance optimizations */
+@import './styles/editor-performance.css';
+
 :root {
   --background: hsl(0 0% 98%);
   --foreground: hsl(217 9% 13%);

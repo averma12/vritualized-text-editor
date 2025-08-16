@@ -36,6 +36,7 @@ export default function Editor() {
     wordTimestamps?: any[];
     chunks: DocumentChunk[];
   } | null>(null);
+  const [scrollToTrigger, setScrollToTrigger] = useState<number | undefined>();
 
   // Fetch document data
   const { data: document } = useQuery<Document>({
@@ -143,6 +144,8 @@ export default function Editor() {
     // Convert progress to section index for tracking
     const sectionIndex = Math.floor(progress * activeChunks.length);
     setCurrentSection(Math.max(0, Math.min(activeChunks.length - 1, sectionIndex)));
+    // Force editor to scroll to position
+    setScrollToTrigger(progress);
   }, [activeChunks.length]);
   
   const handleScroll = useCallback((progress: number) => {
@@ -217,6 +220,7 @@ export default function Editor() {
           currentPlaybackTime={currentPlaybackTime}
           onScroll={handleScroll}
           searchTerm={searchTerm}
+          scrollToProgress={scrollToTrigger}
           onContentChange={(chunkIndex, content) => {
             // Handle content changes per chunk
             console.log(`Chunk ${chunkIndex} changed:`, content.length, 'characters');

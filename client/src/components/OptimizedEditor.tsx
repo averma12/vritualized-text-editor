@@ -124,8 +124,9 @@ export function OptimizedEditor({
   currentPlaybackTime = 0,
   onScroll,
   onContentChange,
-  searchTerm = ''
-}: OptimizedEditorProps) {
+  searchTerm = '',
+  scrollToProgress
+}: OptimizedEditorProps & { scrollToProgress?: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   
@@ -208,6 +209,17 @@ export function OptimizedEditor({
       onContentChange(chunkIndex, content);
     }
   }, [onContentChange]);
+
+  // Handle external scroll commands
+  useEffect(() => {
+    if (scrollToProgress !== undefined && containerRef.current) {
+      const targetScrollTop = scrollToProgress * (totalHeight - CONTAINER_HEIGHT);
+      containerRef.current.scrollTo({
+        top: Math.max(0, targetScrollTop),
+        behavior: 'smooth'
+      });
+    }
+  }, [scrollToProgress, totalHeight, CONTAINER_HEIGHT]);
   
   return (
     <ErrorBoundary>

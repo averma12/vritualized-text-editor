@@ -47,7 +47,7 @@ const ChunkRenderer = memo(({
     height: `${height}px`,
     visibility: isVisible ? 'visible' as const : 'hidden' as const,
     pointerEvents: isVisible ? 'auto' as const : 'none' as const,
-    zIndex: isVisible ? 10 + index : 0, // Unique z-index per chunk
+    zIndex: isVisible ? 1 : 0, // Keep all visible chunks at same level
     contain: 'layout style paint size',
     isolation: 'isolate' as const, // Create new stacking context
     backgroundColor: 'white', // Ensure opaque background
@@ -60,21 +60,47 @@ const ChunkRenderer = memo(({
   }, [chunk.content]);
   
   const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
-    // Disable input handling to prevent conflicts
-    e.preventDefault();
-  }, []);
+    if (!isVisible || !onContentChange || !contentRef.current) return;
+    
+    // Debounce content changes to prevent rapid updates
+    const newContent = contentRef.current.innerText || '';
+    
+    // Only update if content actually changed significantly
+    if (Math.abs(newContent.length - chunk.content.length) > 5) {
+      onContentChange(newContent);
+    }
+  }, [onContentChange, isVisible, chunk.content.length]);
   
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Disable all key events to prevent editing conflicts
-    e.preventDefault();
-  }, []);
+    if (!isVisible) {
+      e.preventDefault();
+      return;
+    }
+    
+    // Allow normal editing but prevent cross-chunk navigation
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      const selection = window.getSelection();
+      if (selection && contentRef.current) {
+        const range = selection.getRangeAt(0);
+        const rect = contentRef.current.getBoundingClientRect();
+        
+        // Check if we're at chunk boundaries
+        if (e.key === 'ArrowUp' && range.startOffset === 0) {
+          e.preventDefault(); // Prevent moving to previous chunk
+        }
+        if (e.key === 'ArrowDown' && range.startOffset === contentRef.current.innerText.length) {
+          e.preventDefault(); // Prevent moving to next chunk
+        }
+      }
+    }
+  }, [isVisible]);
   
   return (
     <div style={style} className="chunk-container" data-visible={isVisible}>
       <div 
         ref={contentRef}
         className="px-12 py-4 text-base leading-relaxed editor-content"
-        contentEditable={false}
+        contentEditable={isVisible}
         suppressContentEditableWarning
         onInput={handleInput}
         onKeyDown={handleKeyDown}
